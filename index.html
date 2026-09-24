@@ -555,14 +555,18 @@ function setFace(name) {
 function triggerFace(name) {
 
     /*
-     * Don't interrupt the current directional face.
+     * If we're already showing this direction,
+     * keep the existing timer.
      */
-
-    if (currentFace !== "center") {
+    if (currentFace === name) {
         return;
     }
 
 
+    /*
+     * A different direction immediately replaces
+     * the current face.
+     */
     clearTimeout(faceTimer);
 
 
@@ -574,9 +578,8 @@ function triggerFace(name) {
 
 
     /*
-     * Use the current setting.
+     * Start a fresh display timer.
      */
-
     faceTimer =
         setTimeout(
             () => {
@@ -588,7 +591,6 @@ function triggerFace(name) {
         );
 
 }
-
 
 // ============================================================
 // MOTION
@@ -629,21 +631,13 @@ function motionChanged(event) {
 
 function detectRotation() {
 
-    /*
-     * Don't detect another movement while
-     * a directional face is displayed.
-     */
-
-    if (currentFace !== "center") {
-        return;
-    }
-
-
     const threshold =
         SETTINGS.rotationThreshold;
 
 
-    // LEFT / RIGHT
+    /*
+     * LEFT / RIGHT
+     */
 
     if (
         Math.abs(alpha) >= threshold
@@ -664,7 +658,9 @@ function detectRotation() {
     }
 
 
-    // UP / DOWN
+    /*
+     * UP / DOWN
+     */
 
     if (
         Math.abs(beta) >= threshold
@@ -685,8 +681,7 @@ function detectRotation() {
     }
 
 }
-
-
+   
 // ============================================================
 // DEBUG
 // ============================================================
