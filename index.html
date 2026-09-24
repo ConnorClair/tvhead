@@ -31,11 +31,6 @@ body {
     font-family: Arial, sans-serif;
 }
 
-
-/* ============================================================
-   DISPLAY
-============================================================ */
-
 #screen {
     width: 100%;
     height: 100%;
@@ -55,11 +50,6 @@ body {
     user-select: none;
     pointer-events: none;
 }
-
-
-/* ============================================================
-   START SCREEN
-============================================================ */
 
 #start {
     position: fixed;
@@ -94,11 +84,6 @@ button {
     border-radius: 10px;
 }
 
-
-/* ============================================================
-   CONTROLS
-============================================================ */
-
 #controls {
     position: fixed;
 
@@ -116,15 +101,11 @@ button {
 }
 
 #controls.visible {
-
     opacity: 1;
-
     pointer-events: auto;
-
 }
 
 #settingsButton {
-
     width: 60px;
     height: 60px;
 
@@ -137,16 +118,9 @@ button {
     color: white;
 
     font-size: 28px;
-
 }
 
-
-/* ============================================================
-   SETTINGS PANEL
-============================================================ */
-
 #settingsPanel {
-
     position: fixed;
 
     top: 50%;
@@ -174,62 +148,42 @@ button {
 }
 
 #settingsPanel.open {
-
     display: block;
-
 }
 
 #settingsPanel h2 {
-
     margin-top: 0;
-
 }
 
 .setting {
-
     margin: 25px 0;
-
 }
 
 .setting label {
-
     display: block;
 
     margin-bottom: 10px;
 
     font-size: 18px;
-
 }
 
 .setting input[type="range"] {
-
     width: 100%;
-
 }
 
 .settingValue {
-
     margin-top: 5px;
 
     font-family: monospace;
-
 }
 
 #closeSettings {
-
     width: 100%;
 
     margin-top: 10px;
-
 }
 
-
-/* ============================================================
-   DEBUG
-============================================================ */
-
 #debug {
-
     position: fixed;
 
     top: 10px;
@@ -249,13 +203,10 @@ button {
     font-size: 16px;
 
     line-height: 1.5;
-
 }
 
 #debug.hidden {
-
     display: none;
-
 }
 
 </style>
@@ -263,10 +214,6 @@ button {
 </head>
 
 <body>
-
-<!-- ============================================================
-     FACE
-============================================================ -->
 
 <div id="screen">
 
@@ -278,10 +225,6 @@ button {
 ```
 
 </div>
-
-<!-- ============================================================
-     START
-============================================================ -->
 
 <div id="start">
 
@@ -305,10 +248,6 @@ button {
 
 </div>
 
-<!-- ============================================================
-     CONTROLS
-============================================================ -->
-
 <div id="controls">
 
 ```
@@ -318,10 +257,6 @@ button {
 ```
 
 </div>
-
-<!-- ============================================================
-     SETTINGS
-============================================================ -->
 
 <div id="settingsPanel">
 
@@ -371,16 +306,39 @@ button {
 </div>
 
 
+<!-- FACE TIME -->
+
+<div class="setting">
+
+    <label>
+        Face Display Time
+    </label>
+
+    <input
+        id="faceTime"
+        type="range"
+        min="0.5"
+        max="10"
+        step="0.5"
+        value="2"
+    >
+
+    <div
+        id="faceTimeValue"
+        class="settingValue"
+    >
+        2.0 seconds
+    </div>
+
+</div>
+
+
 <button id="closeSettings">
     CLOSE
 </button>
 ```
 
 </div>
-
-<!-- ============================================================
-     DEBUG
-============================================================ -->
 
 <div id="debug">
 
@@ -400,22 +358,23 @@ Sensor: WAITING
 const SETTINGS = {
 
     /*
-     * Rotational velocity threshold.
+     * Rotational velocity required to trigger
+     * a directional face.
      */
 
     rotationThreshold: 80,
 
 
     /*
-     * Minimum time directional image
-     * remains visible.
+     * How long a directional face remains
+     * visible.
      */
 
     minimumFaceTime: 2000,
 
 
     /*
-     * Time before controls fade away.
+     * Controls fade time.
      */
 
     controlsFadeTime: 2500
@@ -459,6 +418,12 @@ const sensitivity =
 
 const sensitivityValue =
     document.getElementById("sensitivityValue");
+
+const faceTime =
+    document.getElementById("faceTime");
+
+const faceTimeValue =
+    document.getElementById("faceTimeValue");
 
 
 // ============================================================
@@ -537,7 +502,7 @@ function setFace(name) {
 function triggerFace(name) {
 
     /*
-     * Don't interrupt an existing face.
+     * Don't interrupt the current face.
      */
 
     if (currentFace !== "center") {
@@ -609,7 +574,7 @@ function detectRotation() {
 
     /*
      * Don't detect another movement while
-     * a directional face is being displayed.
+     * a directional face is displayed.
      */
 
     if (currentFace !== "center") {
@@ -621,9 +586,9 @@ function detectRotation() {
         SETTINGS.rotationThreshold;
 
 
-    // --------------------------------------------------------
+    // ========================================================
     // LEFT / RIGHT
-    // --------------------------------------------------------
+    // ========================================================
 
     if (
         Math.abs(alpha) >= threshold
@@ -631,34 +596,46 @@ function detectRotation() {
 
         if (alpha > 0) {
 
-            triggerFace("right");
+            setFace("right");
 
         } else {
 
-            triggerFace("left");
+            setFace("left");
 
         }
+
+
+        triggerFace(
+            currentFace
+        );
 
         return;
 
     }
 
 
-    // --------------------------------------------------------
+    // ========================================================
     // UP / DOWN
-    // --------------------------------------------------------
+    // ========================================================
 
     if (
         Math.abs(beta) >= threshold
     ) {
 
+        /*
+         * Corrected direction:
+         *
+         * Positive beta = UP
+         * Negative beta = DOWN
+         */
+
         if (beta > 0) {
 
-            triggerFace("down");
+            triggerFace("up");
 
         } else {
 
-            triggerFace("up");
+            triggerFace("down");
 
         }
 
@@ -743,11 +720,6 @@ function showControls() {
         setTimeout(
             () => {
 
-                /*
-                 * Don't hide controls while
-                 * the settings window is open.
-                 */
-
                 if (
                     !settingsPanel.classList
                         .contains("open")
@@ -773,11 +745,6 @@ function showControls() {
 document.body.addEventListener(
     "click",
     (event) => {
-
-        /*
-         * Ignore clicks that belong to
-         * the settings interface.
-         */
 
         if (
             settingsPanel.contains(
@@ -825,6 +792,7 @@ settingsButton.addEventListener(
         clearTimeout(
             controlsTimer
         );
+
 
         controls.classList.add(
             "visible"
@@ -916,15 +884,83 @@ sensitivity.addEventListener(
 
 
 // ============================================================
+// FACE DISPLAY TIME
+// ============================================================
+
+faceTime.addEventListener(
+    "input",
+    () => {
+
+        const seconds =
+            Number(
+                faceTime.value
+            );
+
+
+        SETTINGS.minimumFaceTime =
+            seconds * 1000;
+
+
+        faceTimeValue.textContent =
+            seconds.toFixed(1) +
+            " seconds";
+
+
+        /*
+         * If a face is currently displayed,
+         * restart its timer using the new
+         * setting.
+         */
+
+        if (
+            currentFace !== "center"
+        ) {
+
+            clearTimeout(faceTimer);
+
+
+            const elapsed =
+                Date.now() -
+                faceStartedAt;
+
+
+            const remaining =
+                SETTINGS.minimumFaceTime -
+                elapsed;
+
+
+            if (remaining > 0) {
+
+                faceTimer =
+                    setTimeout(
+                        () => {
+
+                            setFace("center");
+
+                        },
+                        remaining
+                    );
+
+            } else {
+
+                setFace("center");
+
+            }
+
+        }
+
+
+        updateDebug();
+
+    }
+);
+
+
+// ============================================================
 // START
 // ============================================================
 
 async function start() {
-
-
-    /*
-     * iOS permission.
-     */
 
     if (
         typeof DeviceMotionEvent !==
@@ -1008,14 +1044,6 @@ startButton.addEventListener(
     start
 );
 
-
-// ============================================================
-// INITIAL STATE
-// ============================================================
-
-debug.classList.remove(
-    "hidden"
-);
 
 </script>
 
