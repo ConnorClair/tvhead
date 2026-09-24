@@ -1,3 +1,554 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="TV Head">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="viewport"
+   content="width=device-width,
+   initial-scale=1.0,
+   maximum-scale=1.0,
+   user-scalable=no">
+
+<title>TV Head</title>
+
+<style>
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    background: black;
+
+    touch-action: none;
+
+    font-family: Arial, sans-serif;
+}
+
+
+/* ============================================================
+   FACE
+============================================================ */
+
+#screen {
+    position: fixed;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background: black;
+}
+
+#face {
+    width: 100%;
+    height: 100%;
+
+    object-fit: contain;
+
+    user-select: none;
+    pointer-events: none;
+}
+
+
+/* ============================================================
+   STATIC OVERLAY
+============================================================ */
+
+#staticOverlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 30;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    pointer-events: none;
+
+    opacity: 0.25;
+
+    display: block;
+
+}
+
+
+/* ============================================================
+   START SCREEN
+============================================================ */
+
+#start {
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 100;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 20px;
+
+    background: black;
+
+    color: white;
+
+    text-align: center;
+}
+
+button {
+
+    padding: 16px 30px;
+
+    font-size: 20px;
+
+    border: none;
+
+    border-radius: 10px;
+
+}
+
+
+/* ============================================================
+   CONTROLS
+============================================================ */
+
+#controls {
+
+    position: fixed;
+
+    bottom: 30px;
+    right: 30px;
+
+    z-index: 50;
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    transition:
+        opacity 0.4s ease;
+
+}
+
+#controls.visible {
+
+    opacity: 1;
+
+    pointer-events: auto;
+
+}
+
+#settingsButton {
+
+    width: 60px;
+    height: 60px;
+
+    padding: 0;
+
+    border-radius: 50%;
+
+    background:
+        rgba(0, 0, 0, 0.7);
+
+    color: white;
+
+    font-size: 28px;
+
+}
+
+
+/* ============================================================
+   SETTINGS
+============================================================ */
+
+#settingsPanel {
+
+    position: fixed;
+
+    top: 50%;
+    left: 50%;
+
+    transform:
+        translate(-50%, -50%);
+
+    z-index: 90;
+
+    width: min(90vw, 450px);
+
+    max-height: 90vh;
+
+    overflow-y: auto;
+
+    padding: 25px;
+
+    background:
+        rgba(20, 20, 20, 0.97);
+
+    color: white;
+
+    border-radius: 15px;
+
+    display: none;
+
+    box-shadow:
+        0 10px 40px
+        rgba(0,0,0,0.7);
+
+}
+
+#settingsPanel.open {
+
+    display: block;
+
+}
+
+#settingsPanel h2 {
+
+    margin-top: 0;
+
+}
+
+.setting {
+
+    margin: 25px 0;
+
+}
+
+.setting label {
+
+    display: block;
+
+    margin-bottom: 10px;
+
+    font-size: 18px;
+
+}
+
+.setting input[type="range"] {
+
+    width: 100%;
+
+}
+
+.settingValue {
+
+    margin-top: 5px;
+
+    font-family: monospace;
+
+}
+
+#closeSettings {
+
+    width: 100%;
+
+    margin-top: 10px;
+
+}
+
+
+/* ============================================================
+   DEBUG
+============================================================ */
+
+#debug {
+
+    position: fixed;
+
+    top: 10px;
+    left: 10px;
+
+    z-index: 200;
+
+    padding: 12px;
+
+    background:
+        rgba(0, 0, 0, 0.75);
+
+    color: white;
+
+    font-family: monospace;
+
+    font-size: 16px;
+
+    line-height: 1.5;
+
+}
+
+#debug.hidden {
+
+    display: none;
+
+}
+
+
+/* ============================================================
+   FULLSCREEN
+============================================================ */
+
+:fullscreen {
+
+    background: black;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- ============================================================
+     FACE
+============================================================ -->
+
+<div id="screen">
+
+```
+<img
+    id="face"
+    src="faces/center.png"
+    alt=""
+>
+```
+
+</div>
+
+<!-- ============================================================
+     STATIC
+============================================================ -->
+
+<img
+id="staticOverlay"
+src="faces/static.gif"
+alt=""
+
+>
+
+<!-- ============================================================
+     START
+============================================================ -->
+
+<div id="start">
+
+```
+<h1>TV HEAD</h1>
+
+<p>
+    Hold the phone in the position
+    it will be worn.
+</p>
+
+<p>
+    Landscape orientation.<br>
+    Screen facing forward.
+</p>
+
+<button id="startButton">
+    START
+</button>
+```
+
+</div>
+
+<!-- ============================================================
+     CONTROLS
+============================================================ -->
+
+<div id="controls">
+
+```
+<button id="settingsButton">
+    ⚙
+</button>
+```
+
+</div>
+
+<!-- ============================================================
+     SETTINGS
+============================================================ -->
+
+<div id="settingsPanel">
+
+```
+<h2>Settings</h2>
+
+
+<!-- FULLSCREEN -->
+
+<div class="setting">
+
+    <label>
+        Fullscreen
+    </label>
+
+    <button id="fullscreenButton">
+        Enter Fullscreen
+    </button>
+
+</div>
+
+
+<!-- DEBUG -->
+
+<div class="setting">
+
+    <label>
+        Debug Display
+    </label>
+
+    <button id="debugToggle">
+        Hide Debug
+    </button>
+
+</div>
+
+
+<!-- SENSITIVITY -->
+
+<div class="setting">
+
+    <label>
+        Movement Sensitivity
+    </label>
+
+    <input
+        id="sensitivity"
+        type="range"
+        min="20"
+        max="200"
+        step="5"
+        value="80"
+    >
+
+    <div
+        id="sensitivityValue"
+        class="settingValue"
+    >
+        80 °/s
+    </div>
+
+</div>
+
+
+<!-- FACE TIME -->
+
+<div class="setting">
+
+    <label>
+        Face Display Time
+    </label>
+
+    <input
+        id="faceTime"
+        type="range"
+        min="0.25"
+        max="10"
+        step="0.25"
+        value="2"
+    >
+
+    <div
+        id="faceTimeValue"
+        class="settingValue"
+    >
+        2.00 seconds
+    </div>
+
+</div>
+
+
+<!-- STATIC -->
+
+<div class="setting">
+
+    <label>
+        TV Static
+    </label>
+
+    <button id="staticToggle">
+        Hide Static
+    </button>
+
+</div>
+
+
+<!-- STATIC OPACITY -->
+
+<div class="setting">
+
+    <label>
+        Static Opacity
+    </label>
+
+    <input
+        id="staticOpacity"
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        value="25"
+    >
+
+    <div
+        id="staticOpacityValue"
+        class="settingValue"
+    >
+        25%
+    </div>
+
+</div>
+
+
+<button id="closeSettings">
+    CLOSE
+</button>
+```
+
+</div>
+
+<!-- ============================================================
+     DEBUG
+============================================================ -->
+
+<div id="debug">
+
+```
+Sensor: WAITING
+```
+
+</div>
+
+<div id="sensorTest">
+    Motion: waiting...
+</div>
+
 <script>
 const SETTINGS = {
     rotationThreshold: 80,
@@ -768,3 +1319,6 @@ document.addEventListener(
 setFace("center");
 updateDebug();
 </script>
+    
+</body>
+</html>
