@@ -94,7 +94,7 @@ button {
 
     padding: 12px;
 
-    background: rgba(0,0,0,.75);
+    background: rgba(0, 0, 0, 0.75);
 
     color: white;
 
@@ -144,11 +144,7 @@ button {
 </div>
 
 <div id="debug">
-
-```
-Sensor: WAITING
-```
-
+    Sensor: WAITING
 </div>
 
 <script>
@@ -161,28 +157,23 @@ Sensor: WAITING
 const SETTINGS = {
 
     /*
-     * How much movement is required before
-     * a directional face is activated.
-     */
-
-    movementThreshold: 25,
-
-
-    /*
-     * How quickly the reference position
-     * follows normal movement.
+     * Rotational velocity required to trigger
+     * a directional face.
      *
-     * Higher = follows faster.
+     * Units: degrees per second.
+     *
+     * Try 60-120 for normal head movement.
      */
 
-    trackingSpeed: 0.08,
+    rotationThreshold: 80,
 
 
     /*
-     * How often the sensor is evaluated.
+     * How long the directional face remains
+     * after rotational movement stops.
      */
 
-    updateRate: 50
+    resetDelay: 200
 
 };
 
@@ -227,30 +218,23 @@ let currentFace = "";
 
 
 // ============================================================
-// SENSOR VALUES
+// ROTATIONAL VELOCITY
 // ============================================================
 
-let gamma = 0;
+let rotationAlpha = 0;
 
-let beta = 0;
+let rotationBeta = 0;
 
-
-// ============================================================
-// MOVING REFERENCE
-// ============================================================
-
-let referenceGamma = 0;
-
-let referenceBeta = 0;
+let rotationGamma = 0;
 
 
 // ============================================================
 // STATE
 // ============================================================
 
-let started = false;
+let sensorReady = false;
 
-let lastUpdate = 0;
+let resetTimer = null;
 
 
 // ============================================================
@@ -275,99 +259,60 @@ function setFace(name) {
 
 
 // ============================================================
-// SENSOR EVENT
+// MOTION SENSOR
 // ============================================================
 
-function orientationChanged(event) {
+function motionChanged(event) {
 
-    if (!started) {
+    if (!sensorReady) {
         return;
     }
 
 
-    if (
-        typeof event.gamma === "number"
-    ) {
+    const rate =
+        event.rotationRate;
 
-        gamma = event.gamma;
 
+    if (!rate) {
+        return;
     }
 
 
-    if (
-        typeof event.beta === "number"
-    ) {
+    /*
+     * Rotation rate is measured in
+     * degrees per second.
+     */
 
-        beta = event.beta;
+    rotationAlpha =
+        rate.alpha || 0;
 
-    }
+    rotationBeta =
+        rate.beta || 0;
+
+    rotationGamma =
+        rate.gamma || 0;
+
+
+    detectRotation();
 
 }
 
 
 // ============================================================
-// MAIN MOTION CHECK
+// ROTATION DETECTION
 // ============================================================
 
-function checkMovement() {
+function detectRotation() {
 
-    if (!started) {
-        return;
-    }
-
-
-    const now =
-        Date.now();
+    const threshold =
+        SETTINGS.rotationThreshold;
 
 
     /*
-     * Limit how often the position is checked.
+     * Clear the previous reset timer.
      */
 
-    if (
-        now - lastUpdate <
-        SETTINGS.updateRate
-    ) {
-
-        requestAnimationFrame(
-            checkMovement
-        );
-
-        return;
-
-    }
-
-
-    lastUpdate = now;
-
-
-    // ========================================================
-    // DIFFERENCE FROM CURRENT REFERENCE
-    // ========================================================
-
-    const gammaDifference =
-        gamma - referenceGamma;
-
-    const betaDifference =
-        beta - referenceBeta;
-
-
-    // ========================================================
-    // DETERMINE WHETHER MOVEMENT IS LARGE
-    // ========================================================
-
-    const horizontalMovement =
-        gammaDifference;
-
-    const verticalMovement =
-        betaDifference;
-
-
-    const threshold =
-        SETTINGS.movementThreshold;
-
-
-    let movementDetected = false;
+    clearTimeout(resetTimer);
 
 
     // ========================================================
@@ -376,12 +321,13 @@ function checkMovement() {
 
     /*
      *
-     * The axes are intentionally swapped for
-     * landscape-mounted phones.
+     * alpha = rotation around the phone's Z axis
+     * beta  = rotation around the X axis
+     * gamma = rotation around the Y axis
      *
-     * gamma → physical forward/back
-     * beta  → physical left/right
-     *
+     * For the phone mounted landscape and facing
+     * forward, beta/gamma are used for the
+     * directional reactions.
      */
 
 
@@ -390,25 +336,25 @@ function checkMovement() {
     // --------------------------------------------------------
 
     if (
-        verticalMovement <
-        -threshold
+        Math.abs(rotationBeta) >= threshold
     ) {
 
-        setFace("left");
+        if (rotationBeta > 0) {
 
-        movementDetected = true;
+            setFace("right");
 
-    }
+        } else {
+
+            setFace("left");
+
+        }
 
 
-    else if (
-        verticalMovement >
-        threshold
-    ) {
+        startResetTimer();
 
-        setFace("right");
+        updateDebug();
 
-        movementDetected = true;
+        return;
 
     }
 
@@ -417,70 +363,56 @@ function checkMovement() {
     // UP / DOWN
     // --------------------------------------------------------
 
-    else if (
-        horizontalMovement <
-        -threshold
+    if (
+        Math.abs(rotationGamma) >= threshold
     ) {
 
-        setFace("up");
+        if (rotationGamma > 0) {
 
-        movementDetected = true;
+            setFace("down");
 
-    }
+        } else {
 
+            setFace("up");
 
-    else if (
-        horizontalMovement >
-        threshold
-    ) {
-
-        setFace("down");
-
-        movementDetected = true;
-
-    }
+        }
 
 
-    // ========================================================
-    // NO LARGE MOVEMENT
-    // ========================================================
+        startResetTimer();
 
-    else {
+        updateDebug();
 
-        /*
-         * Return to the default face.
-         */
-
-        setFace("center");
-
-
-        /*
-         * Slowly move the reference position
-         * toward the phone's current position.
-         *
-         * This means the wearer can turn their
-         * entire head/body and the new position
-         * becomes the new center.
-         */
-
-        referenceGamma +=
-            (gamma - referenceGamma) *
-            SETTINGS.trackingSpeed;
-
-
-        referenceBeta +=
-            (beta - referenceBeta) *
-            SETTINGS.trackingSpeed;
+        return;
 
     }
 
+
+    /*
+     * No significant rotational velocity.
+     */
+
+    setFace("center");
 
     updateDebug();
 
+}
 
-    requestAnimationFrame(
-        checkMovement
-    );
+
+// ============================================================
+// RESET TIMER
+// ============================================================
+
+function startResetTimer() {
+
+    resetTimer =
+        setTimeout(
+            () => {
+
+                setFace("center");
+
+            },
+            SETTINGS.resetDelay
+        );
 
 }
 
@@ -491,32 +423,25 @@ function checkMovement() {
 
 function updateDebug() {
 
-    const gammaDifference =
-        gamma - referenceGamma;
-
-    const betaDifference =
-        beta - referenceBeta;
-
-
     debug.innerHTML =
 
         "Sensor: ACTIVE<br><br>" +
 
-        "Gamma: " +
-        gamma.toFixed(1) +
-        "<br>" +
+        "Alpha: " +
+        rotationAlpha.toFixed(1) +
+        " °/s<br>" +
 
         "Beta: " +
-        beta.toFixed(1) +
-        "<br><br>" +
+        rotationBeta.toFixed(1) +
+        " °/s<br>" +
 
-        "Gamma Δ: " +
-        gammaDifference.toFixed(1) +
-        "<br>" +
+        "Gamma: " +
+        rotationGamma.toFixed(1) +
+        " °/s<br><br>" +
 
-        "Beta Δ: " +
-        betaDifference.toFixed(1) +
-        "<br><br>" +
+        "Threshold: " +
+        SETTINGS.rotationThreshold +
+        " °/s<br><br>" +
 
         "Face: " +
         currentFace;
@@ -532,14 +457,14 @@ async function start() {
 
 
     // --------------------------------------------------------
-    // REQUEST IOS SENSOR PERMISSION
+    // IOS PERMISSION
     // --------------------------------------------------------
 
     if (
-        typeof DeviceOrientationEvent !==
+        typeof DeviceMotionEvent !==
         "undefined" &&
 
-        typeof DeviceOrientationEvent
+        typeof DeviceMotionEvent
             .requestPermission ===
             "function"
     ) {
@@ -547,7 +472,7 @@ async function start() {
         try {
 
             const permission =
-                await DeviceOrientationEvent
+                await DeviceMotionEvent
                     .requestPermission();
 
 
@@ -580,51 +505,27 @@ async function start() {
 
 
     // --------------------------------------------------------
-    // LISTEN FOR ORIENTATION
+    // LISTEN FOR MOTION
     // --------------------------------------------------------
 
     window.addEventListener(
-        "deviceorientation",
-        orientationChanged,
+        "devicemotion",
+        motionChanged,
         true
     );
 
 
-    // --------------------------------------------------------
-    // WAIT FOR INITIAL SENSOR DATA
-    // --------------------------------------------------------
-
-    setTimeout(() => {
+    sensorReady = true;
 
 
-        /*
-         * Initial position becomes the
-         * starting reference.
-         */
-
-        referenceGamma =
-            gamma;
-
-        referenceBeta =
-            beta;
+    setFace("center");
 
 
-        started = true;
+    startScreen.style.display =
+        "none";
 
 
-        setFace("center");
-
-
-        startScreen.style.display =
-            "none";
-
-
-        requestAnimationFrame(
-            checkMovement
-        );
-
-
-    }, 500);
+    updateDebug();
 
 }
 
