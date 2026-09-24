@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+   content="width=device-width,
+   initial-scale=1.0,
+   maximum-scale=1.0,
+   user-scalable=no">
+
+<title>TV Head Motion Test</title>
+
+<style>
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    background: black;
+
+    touch-action: none;
+
+    font-family: Arial, sans-serif;
+}
+
+#screen {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+}
+
+#face {
+    width: 100%;
+    height: 100%;
+
+    object-fit: contain;
+
+    user-select: none;
+}
+
+#start {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 10;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 20px;
+
+    background: black;
+
+    color: white;
+
+    text-align: center;
+}
+
+button {
+    padding: 20px 40px;
+
+    font-size: 24px;
+
+    border: none;
+
+    border-radius: 10px;
+}
+
+#debug {
+    position: fixed;
+
+    top: 10px;
+    left: 10px;
+
+    z-index: 20;
+
+    padding: 12px;
+
+    background: rgba(0,0,0,.75);
+
+    color: white;
+
+    font-family: monospace;
+
+    font-size: 16px;
+
+    line-height: 1.5;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="screen">
+
+```
+<img
+    id="face"
+    src="faces/center.png"
+>
+```
+
+</div>
+
+<div id="start">
+
+```
+<h1>TV HEAD</h1>
+
+<p>
+    Hold your phone in the position
+    you want to use as CENTER.
+</p>
+
+<button id="startButton">
+    START
+</button>
+```
+
+</div>
+
+<div id="debug">
+
+```
+Waiting for sensor...
+```
+
+</div>
+
+<script>
+
+
+// ============================================================
+// VARIABLES
+// ============================================================
+
+const face =
+    document.getElementById("face");
+
+const startScreen =
+    document.getElementById("start");
+
+const startButton =
+    document.getElementById("startButton");
+
+const debug =
+    document.getElementById("debug");
+
+
+let centerGamma = 0;
+
+let centerBeta = 0;
+
+let gamma = 0;
+
+let beta = 0;
+
+let started = false;
+
+
+// ============================================================
+// FACE FILES
+// ============================================================
+
+const faces = {
+
+    center: "faces/center.png",
+
+    left: "faces/left.png",
+
+    right: "faces/right.png",
+
+    up: "faces/up.png",
+
+    down: "faces/down.png"
+
+};
+
+
+let currentFace = "";
+
+
+// ============================================================
+// CHANGE FACE
+// ============================================================
+
+function setFace(name) {
+
+    if (name === currentFace) {
+        return;
+    }
+
+    currentFace = name;
+
+    face.src = faces[name];
+
+}
+
+
+// ============================================================
+// SENSOR EVENT
+// ============================================================
+
+function orientationChanged(event) {
+
+    if (!started) {
+        return;
+    }
+
+
+    if (
+        typeof event.gamma === "number"
+    ) {
+
+        gamma = event.gamma;
+
+    }
+
+
+    if (
+        typeof event.beta === "number"
+    ) {
+
+        beta = event.beta;
+
+    }
+
+
+    updateFace();
+
+    updateDebug();
+
+}
+
+
+// ============================================================
+// FACE LOGIC
+// ============================================================
+
+function updateFace() {
+
+    const horizontal =
+        gamma - centerGamma;
+
+    const vertical =
+        beta - centerBeta;
+
+
+    /*
+     * LEFT / RIGHT
+     */
+
+    if (horizontal < -15) {
+
+        setFace("left");
+
+        return;
+
+    }
+
+
+    if (horizontal > 15) {
+
+        setFace("right");
+
+        return;
+
+    }
+
+
+    /*
+     * UP / DOWN
+     */
+
+    if (vertical < -15) {
+
+        setFace("up");
+
+        return;
+
+    }
+
+
+    if (vertical > 15) {
+
+        setFace("down");
+
+        return;
+
+    }
+
+
+    /*
+     * CENTER
+     */
+
+    setFace("center");
+
+}
+
+
+// ============================================================
+// DEBUG
+// ============================================================
+
+function updateDebug() {
+
+    const horizontal =
+        gamma - centerGamma;
+
+    const vertical =
+        beta - centerBeta;
+
+
+    debug.innerHTML =
+
+        "Sensor: ACTIVE<br>" +
+
+        "Gamma: " +
+        gamma.toFixed(1) +
+        "<br>" +
+
+        "Beta: " +
+        beta.toFixed(1) +
+        "<br><br>" +
+
+        "Horizontal: " +
+        horizontal.toFixed(1) +
+        "<br>" +
+
+        "Vertical: " +
+        vertical.toFixed(1) +
+        "<br><br>" +
+
+        "Face: " +
+        currentFace;
+
+}
+
+
+// ============================================================
+// START
+// ============================================================
+
+async function start() {
+
+    /*
+     * Ask for motion permission if required.
+     */
+
+    if (
+        typeof DeviceOrientationEvent !==
+        "undefined" &&
+
+        typeof DeviceOrientationEvent
+            .requestPermission ===
+            "function"
+    ) {
+
+        try {
+
+            const permission =
+                await DeviceOrientationEvent
+                    .requestPermission();
+
+
+            if (
+                permission !==
+                "granted"
+            ) {
+
+                alert(
+                    "Motion permission was denied."
+                );
+
+                return;
+
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Could not request motion permission."
+            );
+
+            return;
+
+        }
+
+    }
+
+
+    /*
+     * Listen for motion.
+     */
+
+    window.addEventListener(
+        "deviceorientation",
+        orientationChanged,
+        true
+    );
+
+
+    /*
+     * Wait briefly for the first
+     * sensor reading.
+     */
+
+    setTimeout(() => {
+
+        centerGamma = gamma;
+
+        centerBeta = beta;
+
+        started = true;
+
+        setFace("center");
+
+        startScreen.style.display =
+            "none";
+
+        updateDebug();
+
+    }, 500);
+
+}
+
+
+// ============================================================
+// BUTTON
+// ============================================================
+
+startButton.addEventListener(
+    "click",
+    start
+);
+
+
+// ============================================================
+// INITIAL DEBUG
+// ============================================================
+
+debug.innerHTML =
+    "Sensor: WAITING<br>" +
+    "Tap START";
+
+</script>
+
+</body>
+</html>
