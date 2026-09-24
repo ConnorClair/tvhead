@@ -1,48 +1,117 @@
 <!DOCTYPE html>
 
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
 
-<meta name="viewport"
-   content="width=device-width,
-   initial-scale=1.0,
-   maximum-scale=1.0,
-   user-scalable=no">
+<meta
+name="viewport"
+content="
+width=device-width,
+height=device-height,
+initial-scale=1.0,
+maximum-scale=1.0,
+minimum-scale=1.0,
+user-scalable=no,
+viewport-fit=cover
+"
+
+>
+
+<meta
+name="mobile-web-app-capable"
+content="yes"
+
+>
+
+<meta
+name="apple-mobile-web-app-capable"
+content="yes"
+
+>
+
+<meta
+name="apple-mobile-web-app-status-bar-style"
+content="black"
+
+>
+
+<meta
+name="theme-color"
+content="#000000"
+
+>
 
 <title>TV Head</title>
 
 <style>
 
+/* ============================================================
+   BASIC
+============================================================ */
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
 html,
 body {
+
     margin: 0;
     padding: 0;
 
     width: 100%;
     height: 100%;
 
+    width: 100vw;
+    height: 100vh;
+
     overflow: hidden;
 
     background: black;
 
+    color: white;
+
     touch-action: none;
 
-    font-family: Arial, sans-serif;
+    overscroll-behavior: none;
+
+    -webkit-user-select: none;
+    user-select: none;
+
+    -webkit-touch-callout: none;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
 }
 
 
 /* ============================================================
-   FACE
+   MAIN SCREEN
 ============================================================ */
 
 #screen {
+
     position: fixed;
 
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 
     width: 100%;
     height: 100%;
+
+    width: 100vw;
+    height: 100vh;
+
+    height: 100dvh;
 
     display: flex;
 
@@ -50,41 +119,56 @@ body {
     justify-content: center;
 
     background: black;
+
 }
 
+
+/* ============================================================
+   FACE
+============================================================ */
+
 #face {
+
     width: 100%;
     height: 100%;
 
     object-fit: contain;
 
-    user-select: none;
+    display: block;
+
     pointer-events: none;
+
 }
 
 
 /* ============================================================
-   STATIC OVERLAY
+   STATIC
 ============================================================ */
 
 #staticOverlay {
 
     position: fixed;
 
-    inset: 0;
-
-    z-index: 30;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 
     width: 100%;
     height: 100%;
 
+    width: 100vw;
+    height: 100vh;
+
+    height: 100dvh;
+
     object-fit: cover;
+
+    z-index: 30;
 
     pointer-events: none;
 
     opacity: 0.25;
-
-    display: block;
 
 }
 
@@ -99,6 +183,11 @@ body {
 
     inset: 0;
 
+    width: 100%;
+    height: 100%;
+
+    height: 100dvh;
+
     z-index: 100;
 
     display: flex;
@@ -108,24 +197,73 @@ body {
     align-items: center;
     justify-content: center;
 
-    gap: 20px;
+    padding:
+        env(safe-area-inset-top)
+        25px
+        env(safe-area-inset-bottom)
+        25px;
 
     background: black;
 
-    color: white;
-
     text-align: center;
+
 }
+
+
+#start h1 {
+
+    margin: 0;
+
+    font-size: clamp(
+        28px,
+        8vw,
+        50px
+    );
+
+}
+
+
+#start p {
+
+    max-width: 500px;
+
+    line-height: 1.5;
+
+}
+
+
+/* ============================================================
+   BUTTONS
+============================================================ */
 
 button {
 
-    padding: 16px 30px;
-
-    font-size: 20px;
-
     border: none;
 
-    border-radius: 10px;
+    border-radius: 12px;
+
+    padding: 15px 25px;
+
+    min-height: 50px;
+
+    background: #222;
+
+    color: white;
+
+    font-size: 18px;
+
+    cursor: pointer;
+
+    touch-action: manipulation;
+
+    -webkit-appearance: none;
+
+}
+
+
+button:active {
+
+    transform: scale(0.96);
 
 }
 
@@ -138,8 +276,17 @@ button {
 
     position: fixed;
 
-    bottom: 30px;
-    right: 30px;
+    right:
+        calc(
+            25px +
+            env(safe-area-inset-right)
+        );
+
+    bottom:
+        calc(
+            25px +
+            env(safe-area-inset-bottom)
+        );
 
     z-index: 50;
 
@@ -152,6 +299,7 @@ button {
 
 }
 
+
 #controls.visible {
 
     opacity: 1;
@@ -160,19 +308,24 @@ button {
 
 }
 
+
 #settingsButton {
 
     width: 60px;
     height: 60px;
+
+    min-height: 60px;
 
     padding: 0;
 
     border-radius: 50%;
 
     background:
-        rgba(0, 0, 0, 0.7);
+        rgba(0, 0, 0, 0.75);
 
-    color: white;
+    border:
+        1px solid
+        rgba(255,255,255,0.3);
 
     font-size: 28px;
 
@@ -180,7 +333,7 @@ button {
 
 
 /* ============================================================
-   SETTINGS
+   SETTINGS PANEL
 ============================================================ */
 
 #settingsPanel {
@@ -195,28 +348,44 @@ button {
 
     z-index: 90;
 
-    width: min(90vw, 450px);
+    width: min(
+        90vw,
+        450px
+    );
 
-    max-height: 90vh;
+    max-height: 90dvh;
 
     overflow-y: auto;
 
     padding: 25px;
 
+    padding-top:
+        calc(
+            25px +
+            env(safe-area-inset-top)
+        );
+
+    padding-bottom:
+        calc(
+            25px +
+            env(safe-area-inset-bottom)
+        );
+
     background:
-        rgba(20, 20, 20, 0.97);
+        rgba(20,20,20,0.97);
 
-    color: white;
-
-    border-radius: 15px;
-
-    display: none;
+    border-radius: 16px;
 
     box-shadow:
         0 10px 40px
         rgba(0,0,0,0.7);
 
+    display: none;
+
+    -webkit-overflow-scrolling: touch;
+
 }
+
 
 #settingsPanel.open {
 
@@ -224,17 +393,20 @@ button {
 
 }
 
+
 #settingsPanel h2 {
 
     margin-top: 0;
 
 }
 
+
 .setting {
 
     margin: 25px 0;
 
 }
+
 
 .setting label {
 
@@ -246,25 +418,23 @@ button {
 
 }
 
+
 .setting input[type="range"] {
 
     width: 100%;
 
+    height: 35px;
+
+    touch-action: pan-x;
+
 }
+
 
 .settingValue {
 
     margin-top: 5px;
 
     font-family: monospace;
-
-}
-
-#closeSettings {
-
-    width: 100%;
-
-    margin-top: 10px;
 
 }
 
@@ -277,25 +447,39 @@ button {
 
     position: fixed;
 
-    top: 10px;
-    left: 10px;
+    top:
+        calc(
+            10px +
+            env(safe-area-inset-top)
+        );
+
+    left:
+        calc(
+            10px +
+            env(safe-area-inset-left)
+        );
 
     z-index: 200;
 
     padding: 12px;
 
     background:
-        rgba(0, 0, 0, 0.75);
+        rgba(0,0,0,0.75);
+
+    border-radius: 6px;
 
     color: white;
 
     font-family: monospace;
 
-    font-size: 16px;
+    font-size: 14px;
 
     line-height: 1.5;
 
+    pointer-events: none;
+
 }
+
 
 #debug.hidden {
 
@@ -311,6 +495,57 @@ button {
 :fullscreen {
 
     background: black;
+
+}
+
+
+:-webkit-full-screen {
+
+    background: black;
+
+}
+
+
+/* ============================================================
+   LANDSCAPE
+============================================================ */
+
+@media (orientation: landscape) {
+
+    #settingsPanel {
+
+        max-height: 85dvh;
+
+    }
+
+}
+
+
+/* ============================================================
+   SMALL SCREENS
+============================================================ */
+
+@media (max-height: 500px) {
+
+    #settingsPanel {
+
+        padding: 18px;
+
+        max-height: 92dvh;
+
+    }
+
+    .setting {
+
+        margin: 15px 0;
+
+    }
+
+    #start {
+
+        gap: 8px;
+
+    }
 
 }
 
@@ -331,6 +566,7 @@ button {
     id="face"
     src="faces/center.png"
     alt=""
+    draggable="false"
 >
 ```
 
@@ -344,6 +580,7 @@ button {
 id="staticOverlay"
 src="faces/static.gif"
 alt=""
+draggable="false"
 
 >
 
@@ -357,7 +594,7 @@ alt=""
 <h1>TV HEAD</h1>
 
 <p>
-    Hold the phone in the position
+    Hold the device in the position
     it will be worn.
 </p>
 
@@ -380,7 +617,10 @@ alt=""
 <div id="controls">
 
 ```
-<button id="settingsButton">
+<button
+    id="settingsButton"
+    aria-label="Settings"
+>
     ⚙
 </button>
 ```
@@ -567,52 +807,84 @@ const SETTINGS = {
 // ============================================================
 
 const face =
-    document.getElementById("face");
+    document.getElementById(
+        "face"
+    );
 
 const startScreen =
-    document.getElementById("start");
+    document.getElementById(
+        "start"
+    );
 
 const startButton =
-    document.getElementById("startButton");
+    document.getElementById(
+        "startButton"
+    );
 
 const controls =
-    document.getElementById("controls");
+    document.getElementById(
+        "controls"
+    );
 
 const settingsButton =
-    document.getElementById("settingsButton");
+    document.getElementById(
+        "settingsButton"
+    );
 
 const settingsPanel =
-    document.getElementById("settingsPanel");
+    document.getElementById(
+        "settingsPanel"
+    );
 
 const closeSettings =
-    document.getElementById("closeSettings");
+    document.getElementById(
+        "closeSettings"
+    );
 
 const debug =
-    document.getElementById("debug");
+    document.getElementById(
+        "debug"
+    );
 
 const debugToggle =
-    document.getElementById("debugToggle");
+    document.getElementById(
+        "debugToggle"
+    );
 
 const sensitivity =
-    document.getElementById("sensitivity");
+    document.getElementById(
+        "sensitivity"
+    );
 
 const sensitivityValue =
-    document.getElementById("sensitivityValue");
+    document.getElementById(
+        "sensitivityValue"
+    );
 
 const faceTime =
-    document.getElementById("faceTime");
+    document.getElementById(
+        "faceTime"
+    );
 
 const faceTimeValue =
-    document.getElementById("faceTimeValue");
+    document.getElementById(
+        "faceTimeValue"
+    );
 
 const staticOverlay =
-    document.getElementById("staticOverlay");
+    document.getElementById(
+        "staticOverlay"
+    );
 
 const staticToggle =
-    document.getElementById("staticToggle");
+    document.getElementById(
+        "staticToggle"
+    );
 
 const staticOpacity =
-    document.getElementById("staticOpacity");
+    document.getElementById(
+        "staticOpacity"
+    );
 
 const staticOpacityValue =
     document.getElementById(
@@ -644,7 +916,7 @@ const faces = {
 };
 
 
-let currentFace = "";
+let currentFace = "center";
 
 
 // ============================================================
@@ -685,9 +957,11 @@ function setFace(name) {
         return;
     }
 
+
     if (currentFace === name) {
         return;
     }
+
 
     currentFace = name;
 
@@ -704,7 +978,8 @@ function setFace(name) {
 function triggerFace(name) {
 
     /*
-     * Same direction does not restart timer.
+     * Same direction does not restart
+     * the display timer.
      */
 
     if (currentFace === name) {
@@ -713,8 +988,8 @@ function triggerFace(name) {
 
 
     /*
-     * A new direction immediately
-     * replaces the old direction.
+     * A different direction immediately
+     * replaces the current face.
      */
 
     clearTimeout(faceTimer);
@@ -741,7 +1016,7 @@ function triggerFace(name) {
 
 
 // ============================================================
-// MOTION
+// MOTION SENSOR
 // ============================================================
 
 function motionChanged(event) {
@@ -751,19 +1026,23 @@ function motionChanged(event) {
     }
 
 
-    if (!event.rotationRate) {
+    const rate =
+        event.rotationRate;
+
+
+    if (!rate) {
         return;
     }
 
 
     alpha =
-        event.rotationRate.alpha || 0;
+        Number(rate.alpha) || 0;
 
     beta =
-        event.rotationRate.beta || 0;
+        Number(rate.beta) || 0;
 
     gamma =
-        event.rotationRate.gamma || 0;
+        Number(rate.gamma) || 0;
 
 
     detectRotation();
@@ -774,7 +1053,7 @@ function motionChanged(event) {
 
 
 // ============================================================
-// ROTATION
+// ROTATION DETECTION
 // ============================================================
 
 function detectRotation() {
@@ -783,7 +1062,9 @@ function detectRotation() {
         SETTINGS.rotationThreshold;
 
 
-    // LEFT / RIGHT
+    /*
+     * Horizontal head rotation.
+     */
 
     if (
         Math.abs(alpha) >= threshold
@@ -804,7 +1085,9 @@ function detectRotation() {
     }
 
 
-    // UP / DOWN
+    /*
+     * Vertical head rotation.
+     */
 
     if (
         Math.abs(beta) >= threshold
@@ -882,7 +1165,7 @@ function updateDebug() {
 
 
 // ============================================================
-// CONTROLS FADE
+// SHOW CONTROLS
 // ============================================================
 
 function showControls() {
@@ -920,12 +1203,17 @@ function showControls() {
 
 
 // ============================================================
-// SCREEN TAP
+// MOBILE SCREEN INTERACTION
 // ============================================================
 
-document.body.addEventListener(
-    "click",
+document.addEventListener(
+    "pointerdown",
     (event) => {
+
+        /*
+         * Don't show the controls when
+         * interacting with the settings UI.
+         */
 
         if (
             settingsPanel.contains(
@@ -950,6 +1238,9 @@ document.body.addEventListener(
 
         showControls();
 
+    },
+    {
+        passive: true
     }
 );
 
@@ -959,11 +1250,10 @@ document.body.addEventListener(
 // ============================================================
 
 settingsButton.addEventListener(
-    "click",
+    "pointerdown",
     (event) => {
 
         event.stopPropagation();
-
 
         settingsPanel.classList.add(
             "open"
@@ -1002,7 +1292,7 @@ closeSettings.addEventListener(
 
 
 // ============================================================
-// DEBUG TOGGLE
+// DEBUG
 // ============================================================
 
 debugToggle.addEventListener(
@@ -1088,8 +1378,8 @@ faceTime.addEventListener(
 
 
         /*
-         * If a directional face is currently
-         * active, restart its timer.
+         * Restart the current face timer
+         * if a directional face is active.
          */
 
         if (
@@ -1125,7 +1415,7 @@ faceTime.addEventListener(
 
 
 // ============================================================
-// STATIC TOGGLE
+// STATIC
 // ============================================================
 
 staticToggle.addEventListener(
@@ -1191,6 +1481,89 @@ staticOpacity.addEventListener(
 // FULLSCREEN
 // ============================================================
 
+async function enterFullscreen() {
+
+    /*
+     * Standard Fullscreen API.
+     */
+
+    if (
+        document.documentElement
+            .requestFullscreen
+    ) {
+
+        await document.documentElement
+            .requestFullscreen();
+
+        return true;
+
+    }
+
+
+    /*
+     * Older WebKit browsers.
+     */
+
+    if (
+        document.documentElement
+            .webkitRequestFullscreen
+    ) {
+
+        document.documentElement
+            .webkitRequestFullscreen();
+
+        return true;
+
+    }
+
+
+    return false;
+
+}
+
+
+async function exitFullscreen() {
+
+    if (
+        document.exitFullscreen
+    ) {
+
+        await document.exitFullscreen();
+
+        return true;
+
+    }
+
+
+    if (
+        document.webkitExitFullscreen
+    ) {
+
+        document.webkitExitFullscreen();
+
+        return true;
+
+    }
+
+
+    return false;
+
+}
+
+
+function isFullscreen() {
+
+    return Boolean(
+
+        document.fullscreenElement ||
+
+        document.webkitFullscreenElement
+
+    );
+
+}
+
+
 fullscreenButton.addEventListener(
     "click",
     async () => {
@@ -1198,21 +1571,32 @@ fullscreenButton.addEventListener(
         try {
 
             if (
-                !document.fullscreenElement
+                isFullscreen()
             ) {
 
-                await document.documentElement
-                    .requestFullscreen();
-
-                fullscreenButton.textContent =
-                    "Exit Fullscreen";
-
-            } else {
-
-                await document.exitFullscreen();
+                await exitFullscreen();
 
                 fullscreenButton.textContent =
                     "Enter Fullscreen";
+
+            } else {
+
+                const success =
+                    await enterFullscreen();
+
+
+                if (success) {
+
+                    fullscreenButton.textContent =
+                        "Exit Fullscreen";
+
+                } else {
+
+                    alert(
+                        "Fullscreen is not supported by this browser."
+                    );
+
+                }
 
             }
 
@@ -1221,7 +1605,7 @@ fullscreenButton.addEventListener(
             console.error(error);
 
             alert(
-                "Fullscreen is not available."
+                "Fullscreen could not be enabled."
             );
 
         }
@@ -1231,36 +1615,49 @@ fullscreenButton.addEventListener(
 
 
 // ============================================================
-// UPDATE FULLSCREEN BUTTON
+// FULLSCREEN STATE
 // ============================================================
+
+function updateFullscreenButton() {
+
+    if (
+        isFullscreen()
+    ) {
+
+        fullscreenButton.textContent =
+            "Exit Fullscreen";
+
+    } else {
+
+        fullscreenButton.textContent =
+            "Enter Fullscreen";
+
+    }
+
+}
+
 
 document.addEventListener(
     "fullscreenchange",
-    () => {
+    updateFullscreenButton
+);
 
-        if (
-            document.fullscreenElement
-        ) {
-
-            fullscreenButton.textContent =
-                "Exit Fullscreen";
-
-        } else {
-
-            fullscreenButton.textContent =
-                "Enter Fullscreen";
-
-        }
-
-    }
+document.addEventListener(
+    "webkitfullscreenchange",
+    updateFullscreenButton
 );
 
 
 // ============================================================
-// START
+// START SENSOR
 // ============================================================
 
-async function start() {
+async function startMotionSensor() {
+
+    /*
+     * iOS 13+ requires permission to be requested
+     * from a user interaction such as pressing START.
+     */
 
     if (
         typeof DeviceMotionEvent !==
@@ -1283,11 +1680,14 @@ async function start() {
                 "granted"
             ) {
 
+                debug.innerHTML =
+                    "Sensor: PERMISSION DENIED";
+
                 alert(
                     "Motion sensor permission was denied."
                 );
 
-                return;
+                return false;
 
             }
 
@@ -1295,53 +1695,109 @@ async function start() {
 
             console.error(error);
 
-            alert(
-                "Could not access motion sensors."
-            );
+            debug.innerHTML =
+                "Sensor: PERMISSION ERROR";
 
-            return;
+            return false;
 
         }
 
     }
 
 
+    /*
+     * Android and browsers that do not require
+     * explicit permission.
+     */
+
+    if (
+        typeof DeviceMotionEvent ===
+        "undefined"
+    ) {
+
+        debug.innerHTML =
+            "Sensor: NOT SUPPORTED";
+
+        alert(
+            "This device does not provide a motion sensor."
+        );
+
+        return false;
+
+    }
+
+
+    /*
+     * Listen for motion.
+     */
+
     window.addEventListener(
         "devicemotion",
         motionChanged,
-        true
+        {
+            passive: true
+        }
     );
 
 
     sensorReady = true;
 
 
-    setFace("center");
-
-
-    startScreen.style.display =
-        "none";
-
-
-    debugVisible = true;
-
-    debug.classList.remove(
-        "hidden"
-    );
-
-
-    updateDebug();
+    return true;
 
 }
 
 
 // ============================================================
-// START BUTTON
+// START
 // ============================================================
 
 startButton.addEventListener(
     "click",
-    start
+    async () => {
+
+        startButton.disabled =
+            true;
+
+
+        startButton.textContent =
+            "STARTING...";
+
+
+        const success =
+            await startMotionSensor();
+
+
+        if (!success) {
+
+            startButton.disabled =
+                false;
+
+            startButton.textContent =
+                "START";
+
+            return;
+
+        }
+
+
+        setFace("center");
+
+
+        startScreen.style.display =
+            "none";
+
+
+        debugVisible = true;
+
+        debug.classList.remove(
+            "hidden"
+        );
+
+
+        updateDebug();
+
+    }
 );
 
 
@@ -1352,11 +1808,22 @@ startButton.addEventListener(
 staticOverlay.style.opacity =
     SETTINGS.staticOpacity;
 
+
 debug.classList.remove(
     "hidden"
 );
 
+
+/*
+ * Make the initial face explicit.
+ */
+
+face.src =
+    faces.center;
+
+
 </script>
 
 </body>
+
 </html>
