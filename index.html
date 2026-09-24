@@ -128,7 +128,8 @@ button {
 <h1>TV HEAD</h1>
 
 <p>
-    Hold the phone in the costume position.
+    Hold the phone in the position
+    it will be worn.
 </p>
 
 <p>
@@ -160,20 +161,20 @@ const SETTINGS = {
      * Rotational velocity required to trigger
      * a directional face.
      *
-     * Units: degrees per second.
-     *
-     * Try 60-120 for normal head movement.
+     * Degrees per second.
      */
 
     rotationThreshold: 80,
 
 
     /*
-     * How long the directional face remains
-     * after rotational movement stops.
+     * Minimum amount of time a directional
+     * face stays visible.
+     *
+     * 2000 = 2 seconds.
      */
 
-    resetDelay: 200
+    minimumFaceTime: 2000
 
 };
 
@@ -218,27 +219,29 @@ let currentFace = "";
 
 
 // ============================================================
-// ROTATIONAL VELOCITY
+// ROTATION VELOCITY
 // ============================================================
 
-let rotationAlpha = 0;
+let alpha = 0;
 
-let rotationBeta = 0;
+let beta = 0;
 
-let rotationGamma = 0;
+let gamma = 0;
 
 
 // ============================================================
-// STATE
+// FACE STATE
 // ============================================================
+
+let faceStartedAt = 0;
+
+let faceTimer = null;
 
 let sensorReady = false;
 
-let resetTimer = null;
-
 
 // ============================================================
-// FACE CHANGER
+// CHANGE FACE
 // ============================================================
 
 function setFace(name) {
@@ -259,6 +262,49 @@ function setFace(name) {
 
 
 // ============================================================
+// SHOW DIRECTIONAL FACE
+// ============================================================
+
+function triggerFace(name) {
+
+    /*
+     * Don't restart the timer if the same
+     * directional face is already active.
+     */
+
+    if (currentFace === name) {
+        return;
+    }
+
+
+    clearTimeout(faceTimer);
+
+
+    setFace(name);
+
+
+    faceStartedAt =
+        Date.now();
+
+
+    /*
+     * The face cannot return to center
+     * until at least 2 seconds have passed.
+     */
+
+    faceTimer = setTimeout(
+        () => {
+
+            setFace("center");
+
+        },
+        SETTINGS.minimumFaceTime
+    );
+
+}
+
+
+// ============================================================
 // MOTION SENSOR
 // ============================================================
 
@@ -269,28 +315,19 @@ function motionChanged(event) {
     }
 
 
-    const rate =
-        event.rotationRate;
-
-
-    if (!rate) {
+    if (!event.rotationRate) {
         return;
     }
 
 
-    /*
-     * Rotation rate is measured in
-     * degrees per second.
-     */
+    alpha =
+        event.rotationRate.alpha || 0;
 
-    rotationAlpha =
-        rate.alpha || 0;
+    beta =
+        event.rotationRate.beta || 0;
 
-    rotationBeta =
-        rate.beta || 0;
-
-    rotationGamma =
-        rate.gamma || 0;
+    gamma =
+        event.rotationRate.gamma || 0;
 
 
     detectRotation();
@@ -309,110 +346,80 @@ function detectRotation() {
 
 
     /*
-     * Clear the previous reset timer.
+     * Don't allow a new face to interrupt
+     * the current 2-second display period.
      */
 
-    clearTimeout(resetTimer);
+    if (
+        currentFace !== "center"
+    ) {
+
+        updateDebug();
+
+        return;
+
+    }
 
 
     // ========================================================
-    // LANDSCAPE AXIS MAPPING
-    // ========================================================
-
-    /*
-     *
-     * alpha = rotation around the phone's Z axis
-     * beta  = rotation around the X axis
-     * gamma = rotation around the Y axis
-     *
-     * For the phone mounted landscape and facing
-     * forward, beta/gamma are used for the
-     * directional reactions.
-     */
-
-
-    // --------------------------------------------------------
     // LEFT / RIGHT
-    // --------------------------------------------------------
-
-    if (
-        Math.abs(rotationBeta) >= threshold
-    ) {
-
-        if (rotationBeta > 0) {
-
-            setFace("right");
-
-        } else {
-
-            setFace("left");
-
-        }
-
-
-        startResetTimer();
-
-        updateDebug();
-
-        return;
-
-    }
-
-
-    // --------------------------------------------------------
-    // UP / DOWN
-    // --------------------------------------------------------
-
-    if (
-        Math.abs(rotationGamma) >= threshold
-    ) {
-
-        if (rotationGamma > 0) {
-
-            setFace("down");
-
-        } else {
-
-            setFace("up");
-
-        }
-
-
-        startResetTimer();
-
-        updateDebug();
-
-        return;
-
-    }
-
+    // ========================================================
 
     /*
-     * No significant rotational velocity.
+     * Alpha is used for horizontal rotation.
      */
 
-    setFace("center");
+    if (
+        Math.abs(alpha) >= threshold
+    ) {
+
+        if (alpha > 0) {
+
+            triggerFace("right");
+
+        } else {
+
+            triggerFace("left");
+
+        }
+
+        updateDebug();
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // UP / DOWN
+    // ========================================================
+
+    /*
+     * Beta is used for vertical rotation.
+     */
+
+    if (
+        Math.abs(beta) >= threshold
+    ) {
+
+        if (beta > 0) {
+
+            triggerFace("down");
+
+        } else {
+
+            triggerFace("up");
+
+        }
+
+        updateDebug();
+
+        return;
+
+    }
+
 
     updateDebug();
-
-}
-
-
-// ============================================================
-// RESET TIMER
-// ============================================================
-
-function startResetTimer() {
-
-    resetTimer =
-        setTimeout(
-            () => {
-
-                setFace("center");
-
-            },
-            SETTINGS.resetDelay
-        );
 
 }
 
@@ -423,25 +430,39 @@ function startResetTimer() {
 
 function updateDebug() {
 
+    const remaining =
+        currentFace === "center"
+            ? 0
+            : Math.max(
+                0,
+                SETTINGS.minimumFaceTime -
+                (Date.now() - faceStartedAt)
+            );
+
+
     debug.innerHTML =
 
         "Sensor: ACTIVE<br><br>" +
 
         "Alpha: " +
-        rotationAlpha.toFixed(1) +
+        alpha.toFixed(1) +
         " °/s<br>" +
 
         "Beta: " +
-        rotationBeta.toFixed(1) +
+        beta.toFixed(1) +
         " °/s<br>" +
 
         "Gamma: " +
-        rotationGamma.toFixed(1) +
+        gamma.toFixed(1) +
         " °/s<br><br>" +
 
         "Threshold: " +
         SETTINGS.rotationThreshold +
-        " °/s<br><br>" +
+        " °/s<br>" +
+
+        "Face time remaining: " +
+        (remaining / 1000).toFixed(1) +
+        " s<br><br>" +
 
         "Face: " +
         currentFace;
@@ -456,9 +477,9 @@ function updateDebug() {
 async function start() {
 
 
-    // --------------------------------------------------------
-    // IOS PERMISSION
-    // --------------------------------------------------------
+    /*
+     * iOS motion permission.
+     */
 
     if (
         typeof DeviceMotionEvent !==
@@ -504,9 +525,9 @@ async function start() {
     }
 
 
-    // --------------------------------------------------------
-    // LISTEN FOR MOTION
-    // --------------------------------------------------------
+    /*
+     * Start receiving motion data.
+     */
 
     window.addEventListener(
         "devicemotion",
