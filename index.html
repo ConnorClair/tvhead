@@ -3,7 +3,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="TV Head">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="viewport"
    content="width=device-width,
    initial-scale=1.0,
@@ -1195,40 +1198,62 @@ fullscreenButton.addEventListener(
     "click",
     async () => {
 
-        try {
+        /*
+         * Normal fullscreen API
+         * for browsers that support it.
+         */
 
-            if (
-                !document.fullscreenElement
-            ) {
+        if (
+            document.documentElement.requestFullscreen
+        ) {
 
-                await document.documentElement
-                    .requestFullscreen();
+            try {
 
-                fullscreenButton.textContent =
-                    "Exit Fullscreen";
+                if (
+                    !document.fullscreenElement
+                ) {
 
-            } else {
+                    await document.documentElement
+                        .requestFullscreen();
 
-                await document.exitFullscreen();
+                } else {
 
-                fullscreenButton.textContent =
-                    "Enter Fullscreen";
+                    await document.exitFullscreen();
+
+                }
+
+                return;
+
+            } catch (error) {
+
+                console.log(
+                    "Fullscreen API unavailable:",
+                    error
+                );
 
             }
 
-        } catch (error) {
-
-            console.error(error);
-
-            alert(
-                "Fullscreen is not available."
-            );
-
         }
+
+
+        /*
+         * iPhone/iPad Safari cannot force
+         * arbitrary webpages into fullscreen.
+         *
+         * Instead, explain how to install it
+         * as a Home Screen web app.
+         */
+
+        alert(
+            "On iPhone/iPad:\n\n" +
+            "1. Tap the Share button.\n" +
+            "2. Choose 'Add to Home Screen'.\n" +
+            "3. Launch TV Head from the Home Screen.\n\n" +
+            "It will open without Safari's address bar."
+        );
 
     }
 );
-
 
 // ============================================================
 // UPDATE FULLSCREEN BUTTON
