@@ -31,6 +31,9 @@ body {
     font-family: Arial, sans-serif;
 }
 
+
+/* DISPLAY */
+
 #screen {
     width: 100%;
     height: 100%;
@@ -50,6 +53,9 @@ body {
     user-select: none;
     pointer-events: none;
 }
+
+
+/* START */
 
 #start {
     position: fixed;
@@ -84,6 +90,9 @@ button {
     border-radius: 10px;
 }
 
+
+/* CONTROLS */
+
 #controls {
     position: fixed;
 
@@ -101,11 +110,15 @@ button {
 }
 
 #controls.visible {
+
     opacity: 1;
+
     pointer-events: auto;
+
 }
 
 #settingsButton {
+
     width: 60px;
     height: 60px;
 
@@ -118,9 +131,14 @@ button {
     color: white;
 
     font-size: 28px;
+
 }
 
+
+/* SETTINGS PANEL */
+
 #settingsPanel {
+
     position: fixed;
 
     top: 50%;
@@ -132,6 +150,10 @@ button {
     z-index: 90;
 
     width: min(90vw, 450px);
+
+    max-height: 90vh;
+
+    overflow-y: auto;
 
     padding: 25px;
 
@@ -148,42 +170,60 @@ button {
 }
 
 #settingsPanel.open {
+
     display: block;
+
 }
 
 #settingsPanel h2 {
+
     margin-top: 0;
+
 }
 
 .setting {
+
     margin: 25px 0;
+
 }
 
 .setting label {
+
     display: block;
 
     margin-bottom: 10px;
 
     font-size: 18px;
+
 }
 
 .setting input[type="range"] {
+
     width: 100%;
+
 }
 
 .settingValue {
+
     margin-top: 5px;
 
     font-family: monospace;
+
 }
 
 #closeSettings {
+
     width: 100%;
 
     margin-top: 10px;
+
 }
 
+
+/* DEBUG */
+
 #debug {
+
     position: fixed;
 
     top: 10px;
@@ -203,10 +243,13 @@ button {
     font-size: 16px;
 
     line-height: 1.5;
+
 }
 
 #debug.hidden {
+
     display: none;
+
 }
 
 </style>
@@ -214,6 +257,8 @@ button {
 </head>
 
 <body>
+
+<!-- FACE -->
 
 <div id="screen">
 
@@ -225,6 +270,8 @@ button {
 ```
 
 </div>
+
+<!-- START -->
 
 <div id="start">
 
@@ -248,6 +295,8 @@ button {
 
 </div>
 
+<!-- CONTROLS -->
+
 <div id="controls">
 
 ```
@@ -257,6 +306,8 @@ button {
 ```
 
 </div>
+
+<!-- SETTINGS -->
 
 <div id="settingsPanel">
 
@@ -306,7 +357,7 @@ button {
 </div>
 
 
-<!-- FACE TIME -->
+<!-- FACE DISPLAY TIME -->
 
 <div class="setting">
 
@@ -317,9 +368,9 @@ button {
     <input
         id="faceTime"
         type="range"
-        min="0.5"
+        min="0.25"
         max="10"
-        step="0.5"
+        step="0.25"
         value="2"
     >
 
@@ -327,7 +378,7 @@ button {
         id="faceTimeValue"
         class="settingValue"
     >
-        2.0 seconds
+        2.00 seconds
     </div>
 
 </div>
@@ -339,6 +390,8 @@ button {
 ```
 
 </div>
+
+<!-- DEBUG -->
 
 <div id="debug">
 
@@ -366,7 +419,7 @@ const SETTINGS = {
 
 
     /*
-     * How long a directional face remains
+     * How long the directional image remains
      * visible.
      */
 
@@ -374,7 +427,7 @@ const SETTINGS = {
 
 
     /*
-     * Controls fade time.
+     * Time before the settings button fades.
      */
 
     controlsFadeTime: 2500
@@ -502,7 +555,7 @@ function setFace(name) {
 function triggerFace(name) {
 
     /*
-     * Don't interrupt the current face.
+     * Don't interrupt the current directional face.
      */
 
     if (currentFace !== "center") {
@@ -519,6 +572,10 @@ function triggerFace(name) {
     faceStartedAt =
         Date.now();
 
+
+    /*
+     * Use the current setting.
+     */
 
     faceTimer =
         setTimeout(
@@ -586,9 +643,7 @@ function detectRotation() {
         SETTINGS.rotationThreshold;
 
 
-    // ========================================================
     // LEFT / RIGHT
-    // ========================================================
 
     if (
         Math.abs(alpha) >= threshold
@@ -596,46 +651,32 @@ function detectRotation() {
 
         if (alpha > 0) {
 
-            setFace("right");
+            triggerFace("right");
 
         } else {
 
-            setFace("left");
+            triggerFace("left");
 
         }
-
-
-        triggerFace(
-            currentFace
-        );
 
         return;
 
     }
 
 
-    // ========================================================
     // UP / DOWN
-    // ========================================================
 
     if (
         Math.abs(beta) >= threshold
     ) {
 
-        /*
-         * Corrected direction:
-         *
-         * Positive beta = UP
-         * Negative beta = DOWN
-         */
-
         if (beta > 0) {
 
-            triggerFace("up");
+            triggerFace("down");
 
         } else {
 
-            triggerFace("down");
+            triggerFace("up");
 
         }
 
@@ -691,7 +732,7 @@ function updateDebug() {
         " °/s<br>" +
 
         "Face time: " +
-        (remaining / 1000).toFixed(1) +
+        (remaining / 1000).toFixed(2) +
         " s<br><br>" +
 
         "Face: " +
@@ -902,50 +943,38 @@ faceTime.addEventListener(
 
 
         faceTimeValue.textContent =
-            seconds.toFixed(1) +
+            seconds.toFixed(2) +
             " seconds";
 
 
         /*
-         * If a face is currently displayed,
-         * restart its timer using the new
-         * setting.
+         * If a directional face is currently
+         * displayed, restart its timer using
+         * the new duration.
          */
 
         if (
             currentFace !== "center"
         ) {
 
-            clearTimeout(faceTimer);
+            clearTimeout(
+                faceTimer
+            );
 
 
-            const elapsed =
-                Date.now() -
-                faceStartedAt;
+            faceStartedAt =
+                Date.now();
 
 
-            const remaining =
-                SETTINGS.minimumFaceTime -
-                elapsed;
+            faceTimer =
+                setTimeout(
+                    () => {
 
+                        setFace("center");
 
-            if (remaining > 0) {
-
-                faceTimer =
-                    setTimeout(
-                        () => {
-
-                            setFace("center");
-
-                        },
-                        remaining
-                    );
-
-            } else {
-
-                setFace("center");
-
-            }
+                    },
+                    SETTINGS.minimumFaceTime
+                );
 
         }
 
@@ -1044,6 +1073,14 @@ startButton.addEventListener(
     start
 );
 
+
+// ============================================================
+// INITIAL STATE
+// ============================================================
+
+debug.classList.remove(
+    "hidden"
+);
 
 </script>
 
