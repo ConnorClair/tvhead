@@ -31,6 +31,11 @@ body {
     font-family: Arial, sans-serif;
 }
 
+
+/* ============================================================
+   DISPLAY
+============================================================ */
+
 #screen {
     width: 100%;
     height: 100%;
@@ -51,12 +56,17 @@ body {
     pointer-events: none;
 }
 
+
+/* ============================================================
+   START SCREEN
+============================================================ */
+
 #start {
     position: fixed;
 
     inset: 0;
 
-    z-index: 10;
+    z-index: 100;
 
     display: flex;
 
@@ -75,26 +85,162 @@ body {
 }
 
 button {
-    padding: 20px 40px;
+    padding: 16px 30px;
 
-    font-size: 24px;
+    font-size: 20px;
 
     border: none;
 
     border-radius: 10px;
 }
 
+
+/* ============================================================
+   CONTROLS
+============================================================ */
+
+#controls {
+    position: fixed;
+
+    bottom: 30px;
+    right: 30px;
+
+    z-index: 50;
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    transition:
+        opacity 0.4s ease;
+}
+
+#controls.visible {
+
+    opacity: 1;
+
+    pointer-events: auto;
+
+}
+
+#settingsButton {
+
+    width: 60px;
+    height: 60px;
+
+    padding: 0;
+
+    border-radius: 50%;
+
+    background: rgba(0, 0, 0, 0.7);
+
+    color: white;
+
+    font-size: 28px;
+
+}
+
+
+/* ============================================================
+   SETTINGS PANEL
+============================================================ */
+
+#settingsPanel {
+
+    position: fixed;
+
+    top: 50%;
+    left: 50%;
+
+    transform:
+        translate(-50%, -50%);
+
+    z-index: 90;
+
+    width: min(90vw, 450px);
+
+    padding: 25px;
+
+    background: rgba(20, 20, 20, 0.97);
+
+    color: white;
+
+    border-radius: 15px;
+
+    display: none;
+
+    box-shadow:
+        0 10px 40px rgba(0,0,0,0.7);
+}
+
+#settingsPanel.open {
+
+    display: block;
+
+}
+
+#settingsPanel h2 {
+
+    margin-top: 0;
+
+}
+
+.setting {
+
+    margin: 25px 0;
+
+}
+
+.setting label {
+
+    display: block;
+
+    margin-bottom: 10px;
+
+    font-size: 18px;
+
+}
+
+.setting input[type="range"] {
+
+    width: 100%;
+
+}
+
+.settingValue {
+
+    margin-top: 5px;
+
+    font-family: monospace;
+
+}
+
+#closeSettings {
+
+    width: 100%;
+
+    margin-top: 10px;
+
+}
+
+
+/* ============================================================
+   DEBUG
+============================================================ */
+
 #debug {
+
     position: fixed;
 
     top: 10px;
     left: 10px;
 
-    z-index: 20;
+    z-index: 40;
 
     padding: 12px;
 
-    background: rgba(0, 0, 0, 0.75);
+    background:
+        rgba(0, 0, 0, 0.75);
 
     color: white;
 
@@ -103,6 +249,13 @@ button {
     font-size: 16px;
 
     line-height: 1.5;
+
+}
+
+#debug.hidden {
+
+    display: none;
+
 }
 
 </style>
@@ -110,6 +263,10 @@ button {
 </head>
 
 <body>
+
+<!-- ============================================================
+     FACE
+============================================================ -->
 
 <div id="screen">
 
@@ -121,6 +278,10 @@ button {
 ```
 
 </div>
+
+<!-- ============================================================
+     START
+============================================================ -->
 
 <div id="start">
 
@@ -144,8 +305,89 @@ button {
 
 </div>
 
+<!-- ============================================================
+     CONTROLS
+============================================================ -->
+
+<div id="controls">
+
+```
+<button id="settingsButton">
+    ⚙
+</button>
+```
+
+</div>
+
+<!-- ============================================================
+     SETTINGS
+============================================================ -->
+
+<div id="settingsPanel">
+
+```
+<h2>Settings</h2>
+
+
+<!-- DEBUG -->
+
+<div class="setting">
+
+    <label>
+        Debug Display
+    </label>
+
+    <button id="debugToggle">
+        Hide Debug
+    </button>
+
+</div>
+
+
+<!-- SENSITIVITY -->
+
+<div class="setting">
+
+    <label>
+        Movement Sensitivity
+    </label>
+
+    <input
+        id="sensitivity"
+        type="range"
+        min="20"
+        max="200"
+        step="5"
+        value="80"
+    >
+
+    <div
+        id="sensitivityValue"
+        class="settingValue"
+    >
+        80 °/s
+    </div>
+
+</div>
+
+
+<button id="closeSettings">
+    CLOSE
+</button>
+```
+
+</div>
+
+<!-- ============================================================
+     DEBUG
+============================================================ -->
+
 <div id="debug">
-    Sensor: WAITING
+
+```
+Sensor: WAITING
+```
+
 </div>
 
 <script>
@@ -158,23 +400,25 @@ button {
 const SETTINGS = {
 
     /*
-     * Rotational velocity required to trigger
-     * a directional face.
-     *
-     * Degrees per second.
+     * Rotational velocity threshold.
      */
 
     rotationThreshold: 80,
 
 
     /*
-     * Minimum amount of time a directional
-     * face stays visible.
-     *
-     * 2000 = 2 seconds.
+     * Minimum time directional image
+     * remains visible.
      */
 
-    minimumFaceTime: 2000
+    minimumFaceTime: 2000,
+
+
+    /*
+     * Time before controls fade away.
+     */
+
+    controlsFadeTime: 2500
 
 };
 
@@ -192,8 +436,29 @@ const startScreen =
 const startButton =
     document.getElementById("startButton");
 
+const controls =
+    document.getElementById("controls");
+
+const settingsButton =
+    document.getElementById("settingsButton");
+
+const settingsPanel =
+    document.getElementById("settingsPanel");
+
+const closeSettings =
+    document.getElementById("closeSettings");
+
 const debug =
     document.getElementById("debug");
+
+const debugToggle =
+    document.getElementById("debugToggle");
+
+const sensitivity =
+    document.getElementById("sensitivity");
+
+const sensitivityValue =
+    document.getElementById("sensitivityValue");
 
 
 // ============================================================
@@ -219,7 +484,7 @@ let currentFace = "";
 
 
 // ============================================================
-// ROTATION VELOCITY
+// MOTION
 // ============================================================
 
 let alpha = 0;
@@ -230,18 +495,22 @@ let gamma = 0;
 
 
 // ============================================================
-// FACE STATE
+// STATE
 // ============================================================
+
+let sensorReady = false;
 
 let faceStartedAt = 0;
 
 let faceTimer = null;
 
-let sensorReady = false;
+let controlsTimer = null;
+
+let debugVisible = true;
 
 
 // ============================================================
-// CHANGE FACE
+// FACE
 // ============================================================
 
 function setFace(name) {
@@ -262,17 +531,16 @@ function setFace(name) {
 
 
 // ============================================================
-// SHOW DIRECTIONAL FACE
+// TRIGGER FACE
 // ============================================================
 
 function triggerFace(name) {
 
     /*
-     * Don't restart the timer if the same
-     * directional face is already active.
+     * Don't interrupt an existing face.
      */
 
-    if (currentFace === name) {
+    if (currentFace !== "center") {
         return;
     }
 
@@ -287,25 +555,21 @@ function triggerFace(name) {
         Date.now();
 
 
-    /*
-     * The face cannot return to center
-     * until at least 2 seconds have passed.
-     */
+    faceTimer =
+        setTimeout(
+            () => {
 
-    faceTimer = setTimeout(
-        () => {
+                setFace("center");
 
-            setFace("center");
-
-        },
-        SETTINGS.minimumFaceTime
-    );
+            },
+            SETTINGS.minimumFaceTime
+        );
 
 }
 
 
 // ============================================================
-// MOTION SENSOR
+// MOTION
 // ============================================================
 
 function motionChanged(event) {
@@ -332,6 +596,8 @@ function motionChanged(event) {
 
     detectRotation();
 
+    updateDebug();
+
 }
 
 
@@ -341,33 +607,23 @@ function motionChanged(event) {
 
 function detectRotation() {
 
+    /*
+     * Don't detect another movement while
+     * a directional face is being displayed.
+     */
+
+    if (currentFace !== "center") {
+        return;
+    }
+
+
     const threshold =
         SETTINGS.rotationThreshold;
 
 
-    /*
-     * Don't allow a new face to interrupt
-     * the current 2-second display period.
-     */
-
-    if (
-        currentFace !== "center"
-    ) {
-
-        updateDebug();
-
-        return;
-
-    }
-
-
-    // ========================================================
+    // --------------------------------------------------------
     // LEFT / RIGHT
-    // ========================================================
-
-    /*
-     * Alpha is used for horizontal rotation.
-     */
+    // --------------------------------------------------------
 
     if (
         Math.abs(alpha) >= threshold
@@ -383,20 +639,14 @@ function detectRotation() {
 
         }
 
-        updateDebug();
-
         return;
 
     }
 
 
-    // ========================================================
+    // --------------------------------------------------------
     // UP / DOWN
-    // ========================================================
-
-    /*
-     * Beta is used for vertical rotation.
-     */
+    // --------------------------------------------------------
 
     if (
         Math.abs(beta) >= threshold
@@ -412,14 +662,9 @@ function detectRotation() {
 
         }
 
-        updateDebug();
-
         return;
 
     }
-
-
-    updateDebug();
 
 }
 
@@ -430,13 +675,21 @@ function detectRotation() {
 
 function updateDebug() {
 
+    if (!debugVisible) {
+        return;
+    }
+
+
     const remaining =
         currentFace === "center"
             ? 0
             : Math.max(
                 0,
                 SETTINGS.minimumFaceTime -
-                (Date.now() - faceStartedAt)
+                (
+                    Date.now() -
+                    faceStartedAt
+                )
             );
 
 
@@ -460,7 +713,7 @@ function updateDebug() {
         SETTINGS.rotationThreshold +
         " °/s<br>" +
 
-        "Face time remaining: " +
+        "Face time: " +
         (remaining / 1000).toFixed(1) +
         " s<br><br>" +
 
@@ -471,6 +724,198 @@ function updateDebug() {
 
 
 // ============================================================
+// CONTROL FADE
+// ============================================================
+
+function showControls() {
+
+    controls.classList.add(
+        "visible"
+    );
+
+
+    clearTimeout(
+        controlsTimer
+    );
+
+
+    controlsTimer =
+        setTimeout(
+            () => {
+
+                /*
+                 * Don't hide controls while
+                 * the settings window is open.
+                 */
+
+                if (
+                    !settingsPanel.classList
+                        .contains("open")
+                ) {
+
+                    controls.classList.remove(
+                        "visible"
+                    );
+
+                }
+
+            },
+            SETTINGS.controlsFadeTime
+        );
+
+}
+
+
+// ============================================================
+// SCREEN TAP
+// ============================================================
+
+document.body.addEventListener(
+    "click",
+    (event) => {
+
+        /*
+         * Ignore clicks that belong to
+         * the settings interface.
+         */
+
+        if (
+            settingsPanel.contains(
+                event.target
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            event.target ===
+            settingsButton
+        ) {
+
+            return;
+
+        }
+
+
+        showControls();
+
+    }
+);
+
+
+// ============================================================
+// SETTINGS BUTTON
+// ============================================================
+
+settingsButton.addEventListener(
+    "click",
+    (event) => {
+
+        event.stopPropagation();
+
+
+        settingsPanel.classList.add(
+            "open"
+        );
+
+
+        clearTimeout(
+            controlsTimer
+        );
+
+        controls.classList.add(
+            "visible"
+        );
+
+    }
+);
+
+
+// ============================================================
+// CLOSE SETTINGS
+// ============================================================
+
+closeSettings.addEventListener(
+    "click",
+    () => {
+
+        settingsPanel.classList.remove(
+            "open"
+        );
+
+        showControls();
+
+    }
+);
+
+
+// ============================================================
+// DEBUG TOGGLE
+// ============================================================
+
+debugToggle.addEventListener(
+    "click",
+    () => {
+
+        debugVisible =
+            !debugVisible;
+
+
+        if (debugVisible) {
+
+            debug.classList.remove(
+                "hidden"
+            );
+
+            debugToggle.textContent =
+                "Hide Debug";
+
+            updateDebug();
+
+        } else {
+
+            debug.classList.add(
+                "hidden"
+            );
+
+            debugToggle.textContent =
+                "Show Debug";
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// SENSITIVITY
+// ============================================================
+
+sensitivity.addEventListener(
+    "input",
+    () => {
+
+        SETTINGS.rotationThreshold =
+            Number(
+                sensitivity.value
+            );
+
+
+        sensitivityValue.textContent =
+            SETTINGS.rotationThreshold +
+            " °/s";
+
+
+        updateDebug();
+
+    }
+);
+
+
+// ============================================================
 // START
 // ============================================================
 
@@ -478,7 +923,7 @@ async function start() {
 
 
     /*
-     * iOS motion permission.
+     * iOS permission.
      */
 
     if (
@@ -525,10 +970,6 @@ async function start() {
     }
 
 
-    /*
-     * Start receiving motion data.
-     */
-
     window.addEventListener(
         "devicemotion",
         motionChanged,
@@ -544,6 +985,13 @@ async function start() {
 
     startScreen.style.display =
         "none";
+
+
+    debugVisible = true;
+
+    debug.classList.remove(
+        "hidden"
+    );
 
 
     updateDebug();
@@ -562,48 +1010,12 @@ startButton.addEventListener(
 
 
 // ============================================================
-// DEBUG TOGGLE
+// INITIAL STATE
 // ============================================================
 
-let tapCount = 0;
-
-let tapTimer;
-
-
-document.body.addEventListener(
-    "click",
-    () => {
-
-        tapCount++;
-
-
-        clearTimeout(tapTimer);
-
-
-        tapTimer = setTimeout(
-            () => {
-
-                tapCount = 0;
-
-            },
-            500
-        );
-
-
-        if (tapCount >= 3) {
-
-            debug.style.display =
-                debug.style.display === "none"
-                    ? "block"
-                    : "none";
-
-            tapCount = 0;
-
-        }
-
-    }
+debug.classList.remove(
+    "hidden"
 );
-
 
 </script>
 
