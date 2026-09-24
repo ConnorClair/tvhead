@@ -545,6 +545,10 @@ Sensor: WAITING
 
 </div>
 
+<div id="sensorTest">
+    Motion: waiting...
+</div>
+
 <script>
 
 
@@ -748,31 +752,24 @@ function triggerFace(name) {
 // ============================================================
 
 function motionChanged(event) {
-
-    if (!sensorReady) {
-        return;
-    }
-
+    const test = document.getElementById("sensorTest");
 
     if (!event.rotationRate) {
+        test.textContent = "Motion detected, but rotationRate is unavailable";
         return;
     }
 
+    alpha = event.rotationRate.alpha ?? 0;
+    beta = event.rotationRate.beta ?? 0;
+    gamma = event.rotationRate.gamma ?? 0;
 
-    alpha =
-        event.rotationRate.alpha || 0;
-
-    beta =
-        event.rotationRate.beta || 0;
-
-    gamma =
-        event.rotationRate.gamma || 0;
-
+    test.textContent =
+        `α ${alpha.toFixed(1)} °/s | ` +
+        `β ${beta.toFixed(1)} °/s | ` +
+        `γ ${gamma.toFixed(1)} °/s`;
 
     detectRotation();
-
     updateDebug();
-
 }
 
 
