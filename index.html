@@ -32,9 +32,15 @@ body {
 }
 
 
-/* DISPLAY */
+/* ============================================================
+   FACE
+============================================================ */
 
 #screen {
+    position: fixed;
+
+    inset: 0;
+
     width: 100%;
     height: 100%;
 
@@ -42,6 +48,8 @@ body {
 
     align-items: center;
     justify-content: center;
+
+    background: black;
 }
 
 #face {
@@ -55,9 +63,38 @@ body {
 }
 
 
-/* START */
+/* ============================================================
+   STATIC OVERLAY
+============================================================ */
+
+#staticOverlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 30;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    pointer-events: none;
+
+    opacity: 0.25;
+
+    display: block;
+
+}
+
+
+/* ============================================================
+   START SCREEN
+============================================================ */
 
 #start {
+
     position: fixed;
 
     inset: 0;
@@ -81,6 +118,7 @@ body {
 }
 
 button {
+
     padding: 16px 30px;
 
     font-size: 20px;
@@ -88,12 +126,16 @@ button {
     border: none;
 
     border-radius: 10px;
+
 }
 
 
-/* CONTROLS */
+/* ============================================================
+   CONTROLS
+============================================================ */
 
 #controls {
+
     position: fixed;
 
     bottom: 30px;
@@ -107,6 +149,7 @@ button {
 
     transition:
         opacity 0.4s ease;
+
 }
 
 #controls.visible {
@@ -126,7 +169,8 @@ button {
 
     border-radius: 50%;
 
-    background: rgba(0, 0, 0, 0.7);
+    background:
+        rgba(0, 0, 0, 0.7);
 
     color: white;
 
@@ -135,7 +179,9 @@ button {
 }
 
 
-/* SETTINGS PANEL */
+/* ============================================================
+   SETTINGS
+============================================================ */
 
 #settingsPanel {
 
@@ -157,7 +203,8 @@ button {
 
     padding: 25px;
 
-    background: rgba(20, 20, 20, 0.97);
+    background:
+        rgba(20, 20, 20, 0.97);
 
     color: white;
 
@@ -166,7 +213,9 @@ button {
     display: none;
 
     box-shadow:
-        0 10px 40px rgba(0,0,0,0.7);
+        0 10px 40px
+        rgba(0,0,0,0.7);
+
 }
 
 #settingsPanel.open {
@@ -220,7 +269,9 @@ button {
 }
 
 
-/* DEBUG */
+/* ============================================================
+   DEBUG
+============================================================ */
 
 #debug {
 
@@ -229,7 +280,7 @@ button {
     top: 10px;
     left: 10px;
 
-    z-index: 40;
+    z-index: 200;
 
     padding: 12px;
 
@@ -252,13 +303,26 @@ button {
 
 }
 
+
+/* ============================================================
+   FULLSCREEN
+============================================================ */
+
+:fullscreen {
+
+    background: black;
+
+}
+
 </style>
 
 </head>
 
 <body>
 
-<!-- FACE -->
+<!-- ============================================================
+     FACE
+============================================================ -->
 
 <div id="screen">
 
@@ -266,12 +330,26 @@ button {
 <img
     id="face"
     src="faces/center.png"
+    alt=""
 >
 ```
 
 </div>
 
-<!-- START -->
+<!-- ============================================================
+     STATIC
+============================================================ -->
+
+<img
+id="staticOverlay"
+src="faces/static.gif"
+alt=""
+
+>
+
+<!-- ============================================================
+     START
+============================================================ -->
 
 <div id="start">
 
@@ -295,7 +373,9 @@ button {
 
 </div>
 
-<!-- CONTROLS -->
+<!-- ============================================================
+     CONTROLS
+============================================================ -->
 
 <div id="controls">
 
@@ -307,12 +387,29 @@ button {
 
 </div>
 
-<!-- SETTINGS -->
+<!-- ============================================================
+     SETTINGS
+============================================================ -->
 
 <div id="settingsPanel">
 
 ```
 <h2>Settings</h2>
+
+
+<!-- FULLSCREEN -->
+
+<div class="setting">
+
+    <label>
+        Fullscreen
+    </label>
+
+    <button id="fullscreenButton">
+        Enter Fullscreen
+    </button>
+
+</div>
 
 
 <!-- DEBUG -->
@@ -357,7 +454,7 @@ button {
 </div>
 
 
-<!-- FACE DISPLAY TIME -->
+<!-- FACE TIME -->
 
 <div class="setting">
 
@@ -384,6 +481,48 @@ button {
 </div>
 
 
+<!-- STATIC -->
+
+<div class="setting">
+
+    <label>
+        TV Static
+    </label>
+
+    <button id="staticToggle">
+        Hide Static
+    </button>
+
+</div>
+
+
+<!-- STATIC OPACITY -->
+
+<div class="setting">
+
+    <label>
+        Static Opacity
+    </label>
+
+    <input
+        id="staticOpacity"
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        value="25"
+    >
+
+    <div
+        id="staticOpacityValue"
+        class="settingValue"
+    >
+        25%
+    </div>
+
+</div>
+
+
 <button id="closeSettings">
     CLOSE
 </button>
@@ -391,7 +530,9 @@ button {
 
 </div>
 
-<!-- DEBUG -->
+<!-- ============================================================
+     DEBUG
+============================================================ -->
 
 <div id="debug">
 
@@ -410,27 +551,13 @@ Sensor: WAITING
 
 const SETTINGS = {
 
-    /*
-     * Rotational velocity required to trigger
-     * a directional face.
-     */
-
     rotationThreshold: 80,
-
-
-    /*
-     * How long the directional image remains
-     * visible.
-     */
 
     minimumFaceTime: 2000,
 
+    controlsFadeTime: 2500,
 
-    /*
-     * Time before the settings button fades.
-     */
-
-    controlsFadeTime: 2500
+    staticOpacity: 0.25
 
 };
 
@@ -477,6 +604,25 @@ const faceTime =
 
 const faceTimeValue =
     document.getElementById("faceTimeValue");
+
+const staticOverlay =
+    document.getElementById("staticOverlay");
+
+const staticToggle =
+    document.getElementById("staticToggle");
+
+const staticOpacity =
+    document.getElementById("staticOpacity");
+
+const staticOpacityValue =
+    document.getElementById(
+        "staticOpacityValue"
+    );
+
+const fullscreenButton =
+    document.getElementById(
+        "fullscreenButton"
+    );
 
 
 // ============================================================
@@ -526,6 +672,8 @@ let controlsTimer = null;
 
 let debugVisible = true;
 
+let staticVisible = true;
+
 
 // ============================================================
 // FACE
@@ -543,7 +691,8 @@ function setFace(name) {
 
     currentFace = name;
 
-    face.src = faces[name];
+    face.src =
+        faces[name];
 
 }
 
@@ -555,18 +704,19 @@ function setFace(name) {
 function triggerFace(name) {
 
     /*
-     * If we're already showing this direction,
-     * keep the existing timer.
+     * Same direction does not restart timer.
      */
+
     if (currentFace === name) {
         return;
     }
 
 
     /*
-     * A different direction immediately replaces
-     * the current face.
+     * A new direction immediately
+     * replaces the old direction.
      */
+
     clearTimeout(faceTimer);
 
 
@@ -577,9 +727,6 @@ function triggerFace(name) {
         Date.now();
 
 
-    /*
-     * Start a fresh display timer.
-     */
     faceTimer =
         setTimeout(
             () => {
@@ -591,6 +738,7 @@ function triggerFace(name) {
         );
 
 }
+
 
 // ============================================================
 // MOTION
@@ -626,7 +774,7 @@ function motionChanged(event) {
 
 
 // ============================================================
-// ROTATION DETECTION
+// ROTATION
 // ============================================================
 
 function detectRotation() {
@@ -635,9 +783,7 @@ function detectRotation() {
         SETTINGS.rotationThreshold;
 
 
-    /*
-     * LEFT / RIGHT
-     */
+    // LEFT / RIGHT
 
     if (
         Math.abs(alpha) >= threshold
@@ -658,9 +804,7 @@ function detectRotation() {
     }
 
 
-    /*
-     * UP / DOWN
-     */
+    // UP / DOWN
 
     if (
         Math.abs(beta) >= threshold
@@ -681,7 +825,8 @@ function detectRotation() {
     }
 
 }
-   
+
+
 // ============================================================
 // DEBUG
 // ============================================================
@@ -737,7 +882,7 @@ function updateDebug() {
 
 
 // ============================================================
-// CONTROL FADE
+// CONTROLS FADE
 // ============================================================
 
 function showControls() {
@@ -920,7 +1065,7 @@ sensitivity.addEventListener(
 
 
 // ============================================================
-// FACE DISPLAY TIME
+// FACE TIME
 // ============================================================
 
 faceTime.addEventListener(
@@ -944,8 +1089,7 @@ faceTime.addEventListener(
 
         /*
          * If a directional face is currently
-         * displayed, restart its timer using
-         * the new duration.
+         * active, restart its timer.
          */
 
         if (
@@ -975,6 +1119,138 @@ faceTime.addEventListener(
 
 
         updateDebug();
+
+    }
+);
+
+
+// ============================================================
+// STATIC TOGGLE
+// ============================================================
+
+staticToggle.addEventListener(
+    "click",
+    () => {
+
+        staticVisible =
+            !staticVisible;
+
+
+        if (staticVisible) {
+
+            staticOverlay.style.display =
+                "block";
+
+            staticToggle.textContent =
+                "Hide Static";
+
+        } else {
+
+            staticOverlay.style.display =
+                "none";
+
+            staticToggle.textContent =
+                "Show Static";
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// STATIC OPACITY
+// ============================================================
+
+staticOpacity.addEventListener(
+    "input",
+    () => {
+
+        const value =
+            Number(
+                staticOpacity.value
+            );
+
+
+        SETTINGS.staticOpacity =
+            value / 100;
+
+
+        staticOverlay.style.opacity =
+            SETTINGS.staticOpacity;
+
+
+        staticOpacityValue.textContent =
+            value + "%";
+
+    }
+);
+
+
+// ============================================================
+// FULLSCREEN
+// ============================================================
+
+fullscreenButton.addEventListener(
+    "click",
+    async () => {
+
+        try {
+
+            if (
+                !document.fullscreenElement
+            ) {
+
+                await document.documentElement
+                    .requestFullscreen();
+
+                fullscreenButton.textContent =
+                    "Exit Fullscreen";
+
+            } else {
+
+                await document.exitFullscreen();
+
+                fullscreenButton.textContent =
+                    "Enter Fullscreen";
+
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Fullscreen is not available."
+            );
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// UPDATE FULLSCREEN BUTTON
+// ============================================================
+
+document.addEventListener(
+    "fullscreenchange",
+    () => {
+
+        if (
+            document.fullscreenElement
+        ) {
+
+            fullscreenButton.textContent =
+                "Exit Fullscreen";
+
+        } else {
+
+            fullscreenButton.textContent =
+                "Enter Fullscreen";
+
+        }
 
     }
 );
@@ -1072,6 +1348,9 @@ startButton.addEventListener(
 // ============================================================
 // INITIAL STATE
 // ============================================================
+
+staticOverlay.style.opacity =
+    SETTINGS.staticOpacity;
 
 debug.classList.remove(
     "hidden"
