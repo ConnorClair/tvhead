@@ -128,8 +128,7 @@ button {
 <h1>TV HEAD</h1>
 
 <p>
-    Hold the phone in its normal
-    costume position.
+    Hold the phone in the costume position.
 </p>
 
 <p>
@@ -145,7 +144,11 @@ button {
 </div>
 
 <div id="debug">
-    Sensor: WAITING
+
+```
+Sensor: WAITING
+```
+
 </div>
 
 <script>
@@ -158,13 +161,28 @@ button {
 const SETTINGS = {
 
     /*
-     * Degrees of movement required before
-     * changing to a directional face.
+     * How much movement is required before
+     * a directional face is activated.
      */
 
-    horizontalThreshold: 15,
+    movementThreshold: 25,
 
-    verticalThreshold: 15
+
+    /*
+     * How quickly the reference position
+     * follows normal movement.
+     *
+     * Higher = follows faster.
+     */
+
+    trackingSpeed: 0.08,
+
+
+    /*
+     * How often the sensor is evaluated.
+     */
+
+    updateRate: 50
 
 };
 
@@ -217,11 +235,13 @@ let gamma = 0;
 let beta = 0;
 
 
-// Center position
+// ============================================================
+// MOVING REFERENCE
+// ============================================================
 
-let centerGamma = 0;
+let referenceGamma = 0;
 
-let centerBeta = 0;
+let referenceBeta = 0;
 
 
 // ============================================================
@@ -230,9 +250,11 @@ let centerBeta = 0;
 
 let started = false;
 
+let lastUpdate = 0;
+
 
 // ============================================================
-// FACE
+// FACE CHANGER
 // ============================================================
 
 function setFace(name) {
@@ -280,110 +302,185 @@ function orientationChanged(event) {
 
     }
 
-
-    updateFace();
-
-    updateDebug();
-
 }
 
 
 // ============================================================
-// DETERMINE FACE
+// MAIN MOTION CHECK
 // ============================================================
 
-function updateFace() {
+function checkMovement() {
 
-    /*
-     * Calculate movement away from the
-     * calibrated center position.
-     */
-
-    const horizontal =
-        gamma - centerGamma;
-
-    const vertical =
-        beta - centerBeta;
+    if (!started) {
+        return;
+    }
 
 
-    const horizontalLimit =
-        SETTINGS.horizontalThreshold;
-
-    const verticalLimit =
-        SETTINGS.verticalThreshold;
+    const now =
+        Date.now();
 
 
     /*
-     * LEFT
+     * Limit how often the position is checked.
      */
 
     if (
-        horizontal <
-        -horizontalLimit
+        now - lastUpdate <
+        SETTINGS.updateRate
+    ) {
+
+        requestAnimationFrame(
+            checkMovement
+        );
+
+        return;
+
+    }
+
+
+    lastUpdate = now;
+
+
+    // ========================================================
+    // DIFFERENCE FROM CURRENT REFERENCE
+    // ========================================================
+
+    const gammaDifference =
+        gamma - referenceGamma;
+
+    const betaDifference =
+        beta - referenceBeta;
+
+
+    // ========================================================
+    // DETERMINE WHETHER MOVEMENT IS LARGE
+    // ========================================================
+
+    const horizontalMovement =
+        gammaDifference;
+
+    const verticalMovement =
+        betaDifference;
+
+
+    const threshold =
+        SETTINGS.movementThreshold;
+
+
+    let movementDetected = false;
+
+
+    // ========================================================
+    // LANDSCAPE AXIS MAPPING
+    // ========================================================
+
+    /*
+     *
+     * The axes are intentionally swapped for
+     * landscape-mounted phones.
+     *
+     * gamma → physical forward/back
+     * beta  → physical left/right
+     *
+     */
+
+
+    // --------------------------------------------------------
+    // LEFT / RIGHT
+    // --------------------------------------------------------
+
+    if (
+        verticalMovement <
+        -threshold
     ) {
 
         setFace("left");
 
-        return;
+        movementDetected = true;
 
     }
 
 
-    /*
-     * RIGHT
-     */
-
-    if (
-        horizontal >
-        horizontalLimit
+    else if (
+        verticalMovement >
+        threshold
     ) {
 
         setFace("right");
 
-        return;
+        movementDetected = true;
 
     }
 
 
-    /*
-     * UP
-     */
+    // --------------------------------------------------------
+    // UP / DOWN
+    // --------------------------------------------------------
 
-    if (
-        vertical <
-        -verticalLimit
+    else if (
+        horizontalMovement <
+        -threshold
     ) {
 
         setFace("up");
 
-        return;
+        movementDetected = true;
 
     }
 
 
-    /*
-     * DOWN
-     */
-
-    if (
-        vertical >
-        verticalLimit
+    else if (
+        horizontalMovement >
+        threshold
     ) {
 
         setFace("down");
 
-        return;
+        movementDetected = true;
 
     }
 
 
-    /*
-     * No major movement.
-     *
-     * Return to CENTER.
-     */
+    // ========================================================
+    // NO LARGE MOVEMENT
+    // ========================================================
 
-    setFace("center");
+    else {
+
+        /*
+         * Return to the default face.
+         */
+
+        setFace("center");
+
+
+        /*
+         * Slowly move the reference position
+         * toward the phone's current position.
+         *
+         * This means the wearer can turn their
+         * entire head/body and the new position
+         * becomes the new center.
+         */
+
+        referenceGamma +=
+            (gamma - referenceGamma) *
+            SETTINGS.trackingSpeed;
+
+
+        referenceBeta +=
+            (beta - referenceBeta) *
+            SETTINGS.trackingSpeed;
+
+    }
+
+
+    updateDebug();
+
+
+    requestAnimationFrame(
+        checkMovement
+    );
 
 }
 
@@ -394,11 +491,11 @@ function updateFace() {
 
 function updateDebug() {
 
-    const horizontal =
-        gamma - centerGamma;
+    const gammaDifference =
+        gamma - referenceGamma;
 
-    const vertical =
-        beta - centerBeta;
+    const betaDifference =
+        beta - referenceBeta;
 
 
     debug.innerHTML =
@@ -413,12 +510,12 @@ function updateDebug() {
         beta.toFixed(1) +
         "<br><br>" +
 
-        "Horizontal: " +
-        horizontal.toFixed(1) +
+        "Gamma Δ: " +
+        gammaDifference.toFixed(1) +
         "<br>" +
 
-        "Vertical: " +
-        vertical.toFixed(1) +
+        "Beta Δ: " +
+        betaDifference.toFixed(1) +
         "<br><br>" +
 
         "Face: " +
@@ -434,9 +531,9 @@ function updateDebug() {
 async function start() {
 
 
-    /*
-     * iOS permission.
-     */
+    // --------------------------------------------------------
+    // REQUEST IOS SENSOR PERMISSION
+    // --------------------------------------------------------
 
     if (
         typeof DeviceOrientationEvent !==
@@ -482,9 +579,9 @@ async function start() {
     }
 
 
-    /*
-     * Listen for orientation.
-     */
+    // --------------------------------------------------------
+    // LISTEN FOR ORIENTATION
+    // --------------------------------------------------------
 
     window.addEventListener(
         "deviceorientation",
@@ -493,22 +590,23 @@ async function start() {
     );
 
 
-    /*
-     * Wait for the sensor to provide
-     * its initial values.
-     */
+    // --------------------------------------------------------
+    // WAIT FOR INITIAL SENSOR DATA
+    // --------------------------------------------------------
 
     setTimeout(() => {
 
 
         /*
-         * The phone's current physical
-         * position becomes CENTER.
+         * Initial position becomes the
+         * starting reference.
          */
 
-        centerGamma = gamma;
+        referenceGamma =
+            gamma;
 
-        centerBeta = beta;
+        referenceBeta =
+            beta;
 
 
         started = true;
@@ -521,7 +619,9 @@ async function start() {
             "none";
 
 
-        updateDebug();
+        requestAnimationFrame(
+            checkMovement
+        );
 
 
     }, 500);
@@ -540,7 +640,7 @@ startButton.addEventListener(
 
 
 // ============================================================
-// DEBUG
+// DEBUG TOGGLE
 // ============================================================
 
 let tapCount = 0;
