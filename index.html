@@ -10,7 +10,7 @@
    maximum-scale=1.0,
    user-scalable=no">
 
-<title>TV Head Motion Test</title>
+<title>TV Head</title>
 
 <style>
 
@@ -48,6 +48,7 @@ body {
     object-fit: contain;
 
     user-select: none;
+    pointer-events: none;
 }
 
 #start {
@@ -127,8 +128,13 @@ button {
 <h1>TV HEAD</h1>
 
 <p>
-    Hold your phone in the position
-    you want to use as CENTER.
+    Hold the phone in its normal
+    costume position.
+</p>
+
+<p>
+    Landscape orientation.<br>
+    Screen facing forward.
 </p>
 
 <button id="startButton">
@@ -139,18 +145,32 @@ button {
 </div>
 
 <div id="debug">
-
-```
-Waiting for sensor...
-```
-
+    Sensor: WAITING
 </div>
 
 <script>
 
 
 // ============================================================
-// VARIABLES
+// SETTINGS
+// ============================================================
+
+const SETTINGS = {
+
+    /*
+     * Degrees of movement required before
+     * changing to a directional face.
+     */
+
+    horizontalThreshold: 15,
+
+    verticalThreshold: 15
+
+};
+
+
+// ============================================================
+// ELEMENTS
 // ============================================================
 
 const face =
@@ -166,19 +186,8 @@ const debug =
     document.getElementById("debug");
 
 
-let centerGamma = 0;
-
-let centerBeta = 0;
-
-let gamma = 0;
-
-let beta = 0;
-
-let started = false;
-
-
 // ============================================================
-// FACE FILES
+// FACES
 // ============================================================
 
 const faces = {
@@ -200,12 +209,39 @@ let currentFace = "";
 
 
 // ============================================================
-// CHANGE FACE
+// SENSOR VALUES
+// ============================================================
+
+let gamma = 0;
+
+let beta = 0;
+
+
+// Center position
+
+let centerGamma = 0;
+
+let centerBeta = 0;
+
+
+// ============================================================
+// STATE
+// ============================================================
+
+let started = false;
+
+
+// ============================================================
+// FACE
 // ============================================================
 
 function setFace(name) {
 
-    if (name === currentFace) {
+    if (!faces[name]) {
+        return;
+    }
+
+    if (currentFace === name) {
         return;
     }
 
@@ -253,10 +289,15 @@ function orientationChanged(event) {
 
 
 // ============================================================
-// FACE LOGIC
+// DETERMINE FACE
 // ============================================================
 
 function updateFace() {
+
+    /*
+     * Calculate movement away from the
+     * calibrated center position.
+     */
 
     const horizontal =
         gamma - centerGamma;
@@ -265,11 +306,21 @@ function updateFace() {
         beta - centerBeta;
 
 
+    const horizontalLimit =
+        SETTINGS.horizontalThreshold;
+
+    const verticalLimit =
+        SETTINGS.verticalThreshold;
+
+
     /*
-     * LEFT / RIGHT
+     * LEFT
      */
 
-    if (horizontal < -15) {
+    if (
+        horizontal <
+        -horizontalLimit
+    ) {
 
         setFace("left");
 
@@ -278,7 +329,14 @@ function updateFace() {
     }
 
 
-    if (horizontal > 15) {
+    /*
+     * RIGHT
+     */
+
+    if (
+        horizontal >
+        horizontalLimit
+    ) {
 
         setFace("right");
 
@@ -288,10 +346,13 @@ function updateFace() {
 
 
     /*
-     * UP / DOWN
+     * UP
      */
 
-    if (vertical < -15) {
+    if (
+        vertical <
+        -verticalLimit
+    ) {
 
         setFace("up");
 
@@ -300,7 +361,14 @@ function updateFace() {
     }
 
 
-    if (vertical > 15) {
+    /*
+     * DOWN
+     */
+
+    if (
+        vertical >
+        verticalLimit
+    ) {
 
         setFace("down");
 
@@ -310,7 +378,9 @@ function updateFace() {
 
 
     /*
-     * CENTER
+     * No major movement.
+     *
+     * Return to CENTER.
      */
 
     setFace("center");
@@ -333,7 +403,7 @@ function updateDebug() {
 
     debug.innerHTML =
 
-        "Sensor: ACTIVE<br>" +
+        "Sensor: ACTIVE<br><br>" +
 
         "Gamma: " +
         gamma.toFixed(1) +
@@ -363,8 +433,9 @@ function updateDebug() {
 
 async function start() {
 
+
     /*
-     * Ask for motion permission if required.
+     * iOS permission.
      */
 
     if (
@@ -389,7 +460,7 @@ async function start() {
             ) {
 
                 alert(
-                    "Motion permission was denied."
+                    "Motion sensor permission was denied."
                 );
 
                 return;
@@ -401,7 +472,7 @@ async function start() {
             console.error(error);
 
             alert(
-                "Could not request motion permission."
+                "Could not access motion sensors."
             );
 
             return;
@@ -412,7 +483,7 @@ async function start() {
 
 
     /*
-     * Listen for motion.
+     * Listen for orientation.
      */
 
     window.addEventListener(
@@ -423,24 +494,35 @@ async function start() {
 
 
     /*
-     * Wait briefly for the first
-     * sensor reading.
+     * Wait for the sensor to provide
+     * its initial values.
      */
 
     setTimeout(() => {
+
+
+        /*
+         * The phone's current physical
+         * position becomes CENTER.
+         */
 
         centerGamma = gamma;
 
         centerBeta = beta;
 
+
         started = true;
 
+
         setFace("center");
+
 
         startScreen.style.display =
             "none";
 
+
         updateDebug();
+
 
     }, 500);
 
@@ -448,7 +530,7 @@ async function start() {
 
 
 // ============================================================
-// BUTTON
+// START BUTTON
 // ============================================================
 
 startButton.addEventListener(
@@ -458,12 +540,48 @@ startButton.addEventListener(
 
 
 // ============================================================
-// INITIAL DEBUG
+// DEBUG
 // ============================================================
 
-debug.innerHTML =
-    "Sensor: WAITING<br>" +
-    "Tap START";
+let tapCount = 0;
+
+let tapTimer;
+
+
+document.body.addEventListener(
+    "click",
+    () => {
+
+        tapCount++;
+
+
+        clearTimeout(tapTimer);
+
+
+        tapTimer = setTimeout(
+            () => {
+
+                tapCount = 0;
+
+            },
+            500
+        );
+
+
+        if (tapCount >= 3) {
+
+            debug.style.display =
+                debug.style.display === "none"
+                    ? "block"
+                    : "none";
+
+            tapCount = 0;
+
+        }
+
+    }
+);
+
 
 </script>
 
